@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy Speller</title>
+    <style>
+        /* CSS Variables for theming */
+        :root {
+            --primary: #FF9E6D;
+            --secondary: #A0E7E5;
+            --accent: #FFD166;
+            --success: #8AC926;
+            --warning: #FFD166;
+            --error: #FF6B6B;
+            --background: #F4F7FE;
+            --text: #333333;
+            --card-bg: #FFFFFF;
+            --font-main: 'Comic Sans MS', cursive, sans-serif;
+            --font-dyslexic: 'Comic Sans MS', cursive, sans-serif;
+        }
+
+        /* Base styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--background);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header styles */
+        header {
+            background-color: var(--primary);
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo svg {
+            width: 40px;
+            height: 40px;
+        }
+
+        .progress {
+            background-color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 30px;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        /* Mode switcher */
+        .mode-switcher {
+            display: flex;
+            background-color: var(--secondary);
+            border-radius: 30px;
+            padding: 0.25rem;
+            margin: 0.5rem auto;
+            max-width: 300px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 30px;
+            background: transparent;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .mode-btn.active {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        /* Main content */
+        main {
+            flex: 1;
+            padding: 1rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Controls section */
+        .controls {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+
+        .word-set-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .word-set-btn {
+            background-color: var(--secondary);
+            border: none;
+            border-radius: 20px;
+            padding: 0.5rem 1rem;
+            font-family: inherit;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .word-set-btn.active {
+            background-color: var(--primary);
+            font-weight: bold;
+        }
+
+        .add-words {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+            margin-top: 1rem;
+        }
+
+        .add-words input {
+            flex: 1;
+            min-width: 200px;
+            padding: 0.75rem;
+            border: 2px solid var(--secondary);
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 1rem;
+        }
+
+        .btn {
+            background-color: var(--accent);
+            border: none;
+            border-radius: 8px;
+            padding: 0.75rem 1.25rem;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 44px;
+            min-width: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        /* Words grid */
+        .words-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .word-card {
+            position:relative;
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 150px;
+            overflow: hidden;
+        }
+
+        .word-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        }
+
+        .word-card.starred::after {
+            content: "⭐";
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            font-size: 1.5rem;
+        }
+
+        .word-card.hidden-word .word-text {
+            visibility: hidden;
+        }
+
+        .word-card.hidden-word::before {
+            content: "";
+            display: block;
+            width: 80%;
+            height: 4px;
+            background-color: var(--text);
+            position: absolute;
+            top: 50%;
+            left: 10%;
+            transform: translateY(-50%);
+        }
+
+        /* Math Dashboard */
+        .math-dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .math-tile {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 180px;
+        }
+
+        .math-tile:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        }
+
+        .math-tile h3 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1.2rem;
+        }
+
+        .math-tile p {
+            margin: 0;
+            color: var(--ink-soft);
+            font-size: 0.9rem;
+        }
+
+        .math-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Practice panel */
+        .practice-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: var(--card-bg);
+            border-radius: 20px 20px 0 0;
+            padding: 2rem;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+            transform: translateY(100%);
+            transition: transform 0.4s ease-out;
+            z-index: 100;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .practice-panel.active {
+            transform: translateY(0);
+        }
+
+        .practice-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .current-word {
+            font-size: 3rem;
+            font-weight: bold;
+            text-align: center;
+            margin: 1rem 0;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            letter-spacing: 0.5rem;
+        }
+
+        .placeholder {
+            letter-spacing: 0.35em;
+            border-bottom: 3px dotted #8bb6ce;
+            display: inline-block;
+            padding-bottom: 8px;
+        }
+
+        .input-area {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .text-input {
+            font-size: 2rem;
+            padding: 1rem;
+            border: 3px solid var(--secondary);
+            border-radius: 12px;
+            text-align: center;
+            font-family: inherit;
+            min-height: 80px;
+        }
+
+        .keyboard {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .key {
+            background-color: var(--secondary);
+            border: none;
+            border-radius: 8px;
+            padding: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            min-height: 60px;
+            min-width: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .key:hover {
+            background-color: var(--accent);
+        }
+
+        .key:active {
+            transform: scale(0.95);
+        }
+
+        .control-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        .btn-hear {
+            background-color: var(--secondary);
+        }
+
+        .btn-sound-out {
+            background-color: #BDB2FF;
+        }
+
+        .btn-check {
+            background-color: var(--success);
+            color: white;
+            grid-column: span 2;
+            font-size: 1.5rem;
+            padding: 1rem;
+        }
+
+        .btn-show {
+            background-color: var(--warning);
+        }
+
+        .btn-next {
+            background-color: var(--primary);
+        }
+
+        /* Footer */
+        footer {
+            background-color: var(--primary);
+            padding: 1rem;
+            text-align: center;
+            margin-top: auto;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .words-grid {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            }
+            
+            .word-card {
+                font-size: 2rem;
+                min-height: 120px;
+                padding: 1rem;
+            }
+            
+            .math-dashboard {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+            
+            .math-tile {
+                min-height: 150px;
+                padding: 1rem;
+            }
+            
+            .keyboard {
+                grid-template-columns: repeat(6, 1fr);
+            }
+            
+            .current-word {
+                font-size: 2.5rem;
+            }
+            
+            .text-input {
+                font-size: 1.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .words-grid {
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            }
+            
+            .word-card {
+                font-size: 1.75rem;
+                min-height: 100px;
+            }
+            
+            .math-dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .keyboard {
+                grid-template-columns: repeat(5, 1fr);
+            }
+            
+            .control-buttons {
+                grid-template-columns: 1fr;
+            }
+            
+            .btn-check {
+                grid-column: span 1;
+            }
+            
+            .practice-panel {
+                padding: 1rem;
+            }
+        }
+
+        /* Additional color variable */
+        :root {
+            --ink-soft: #666;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <svg viewBox="0 0 100 100" aria-hidden="true">
+                <circle cx="50" cy="50" r="45" fill="#FFD166" />
+                <circle cx="35" cy="40" r="5" fill="#333" />
+                <circle cx="65" cy="40" r="5" fill="#333" />
+                <path d="M 30 70 Q 50 85 70 70" stroke="#333" stroke-width="5" fill="none" />
+            </svg>
+            <h1>Happy Speller</h1>
+        </div>
+        <div class="progress" aria-live="polite">
+            ⭐ <span id="stars-count">0</span>/5 today
+        </div>
+        <button id="settings-btn" class="btn" aria-label="Open settings">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v-.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+        </button>
+    </header>
+
+    <div class="mode-switcher">
+        <button class="mode-btn active" data-mode="words">Words</button>
+        <button class="mode-btn" data-mode="math">Math</button>
+    </div>
+
+    <main>
+        <!-- Words Mode Content -->
+        <div id="words-mode">
+            <section class="controls">
+                <div class="word-set-controls">
+                    <button class="word-set-btn active" data-set="L1_sight_preprimer">Level 1</button>
+                    <button class="word-set-btn" data-set="L2_cvc_short_vowels">Level 2</button>
+                    <button class="word-set-btn" data-set="L3_digraphs">Level 3</button>
+                    <button class="word-set-btn" data-set="L4_blends_simple">Level 4</button>
+                    <button class="word-set-btn" data-set="custom">Your Words</button>
+                </div>
+                <div class="add-words">
+                    <input type="text" id="new-words" placeholder="Add words (comma separated)" aria-label="Add new words">
+                    <button id="save-words" class="btn">Save Words</button>
+                </div>
+            </section>
+
+            <section class="words-grid" id="words-container">
+                <!-- Word cards will be generated here -->
+            </section>
+        </div>
+
+        <!-- Math Mode Content -->
+        <div id="math-mode" style="display: none;">
+            <section class="controls">
+                <h2>Math Activities</h2>
+                <p>Choose a math activity to practice kindergarten skills</p>
+            </section>
+
+            <section class="math-dashboard">
+                <div class="math-tile" data-activity="count-compare">
+                    <div class="math-icon">🔢</div>
+                    <h3>Count & Compare</h3>
+                    <p>Count objects and compare sets</p>
+                </div>
+                <div class="math-tile" data-activity="add-subtract">
+                    <div class="math-icon">➕➖</div>
+                    <h3>Add & Subtract</h3>
+                    <p>Solve simple story problems</p>
+                </div>
+                <div class="math-tile" data-activity="teen-numbers">
+                    <div class="math-icon">1️⃣0️⃣</div>
+                    <h3>Teen Numbers</h3>
+                    <p>Learn 10 + n = teen numbers</p>
+                </div>
+                <div class="math-tile" data-activity="measure-data">
+                    <div class="math-icon">📏📊</div>
+                    <h3>Measure & Data</h3>
+                    <p>Compare and sort objects</p>
+                </div>
+                <div class="math-tile" data-activity="geometry">
+                    <div class="math-icon">🔺🔵</div>
+                    <h3>Geometry</h3>
+                    <p>Shapes and positions</p>
+                </div>
+            </section>
+        </div>
+
+        <!-- Word Practice Panel -->
+        <div class="practice-panel" id="practice-panel">
+            <div class="practice-header">
+                <h2>Spell the word!</h2>
+                <button id="close-practice" class="btn" aria-label="Close practice panel">X</button>
+            </div>
+            
+            <div class="current-word" id="current-word-display"></div>
+            
+            <div class="input-area">
+                <input type="text" class="text-input" id="spelling-input" aria-label="Type the word">
+                
+                <div class="keyboard" id="keyboard">
+                    <!-- Keyboard buttons will be generated here -->
+                </div>
+                
+                <div class="control-buttons">
+                    <button class="btn btn-hear" id="hear-again">Hear Again</button>
+                    <button class="btn btn-sound-out" id="sound-out">Sound It Out</button>
+                    <button class="btn btn-check" id="check-answer">Check</button>
+                    <button class="btn btn-show" id="show-word" style="display: none;">Show Word</button>
+                    <button class="btn btn-next" id="next-word" style="display: none;">Next Word</button>
+                </div>
+            </div>
+            
+            <div class="feedback" aria-live="polite">
+                <div class="feedback-text" id="feedback-text"></div>
+                <div class="feedback-emoji" id="feedback-emoji"></div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>Made for little learners. Works offline.</p>
+    </footer>
+
+    <script>
+        // App state
+        const state = {
+            currentWord: '',
+            currentWordSet: 'L1_sight_preprimer',
+            currentMode: 'words',
+            words: {
+                L1_sight_preprimer: ["a","I","and","the","to","in","it","is","at","we"],
+                L2_cvc_short_vowels: ["can","man","ran","cat","dog","sun","bed","fin","hop","red"],
+                L3_digraphs: ["ship","shop","chin","that","then","when","thin","chat","wish","math"],
+                L4_blends_simple: ["flag","spin","plan","drip","clap","snap","trip","frog","sled","plug"],
+                custom: []
+            },
+            settings: {
+                case: 'lowercase',
+                font: 'standard',
+                volume: 0.7,
+                muted: false
+            },
+            completedWords: [],
+            stars: 0,
+            speechSynthesis: window.speechSynthesis || null
+        };
+
+        // DOM elements
+        const elements = {
+            wordsContainer: document.getElementById('words-container'),
+            wordsMode: document.getElementById('words-mode'),
+            mathMode: document.getElementById('math-mode'),
+            practicePanel: document.getElementById('practice-panel'),
+            currentWordDisplay: document.getElementById('current-word-display'),
+            spellingInput: document.getElementById('spelling-input'),
+            keyboard: document.getElementById('keyboard'),
+            hearAgain: document.getElementById('hear-again'),
+            soundOut: document.getElementById('sound-out'),
+            checkAnswer: document.getElementById('check-answer'),
+            showWord: document.getElementById('show-word'),
+            nextWord: document.getElementById('next-word'),
+            feedbackText: document.getElementById('feedback-text'),
+            feedbackEmoji: document.getElementById('feedback-emoji'),
+            starsCount: document.getElementById('stars-count'),
+            newWordsInput: document.getElementById('new-words'),
+            saveWordsBtn: document.getElementById('save-words'),
+            wordSetBtns: document.querySelectorAll('.word-set-btn'),
+            modeBtns: document.querySelectorAll('.mode-btn'),
+            mathTiles: document.querySelectorAll('.math-tile'),
+            closePractice: document.getElementById('close-practice')
+        };
+
+        // Initialize the app
+        function init() {
+            loadFromStorage();
+            renderWordSets();
+            setupKeyboard();
+            setupEventListeners();
+            updateStars();
+        }
+
+        // Load data from localStorage
+        function loadFromStorage() {
+            const savedWords = localStorage.getItem('happySpellerCustomWords');
+            const savedSettings = localStorage.getItem('happySpellerSettings');
+            const savedProgress = localStorage.getItem('happySpellerProgress');
+            
+            if (savedWords) {
+                state.words.custom = JSON.parse(savedWords);
+            }
+            
+            if (savedSettings) {
+                Object.assign(state.settings, JSON.parse(savedSettings));
+            }
+            
+            if (savedProgress) {
+                const progress = JSON.parse(savedProgress);
+                state.stars = progress.stars || 0;
+                state.completedWords = progress.completedWords || [];
+            }
+        }
+
+        // Save data to localStorage
+        function saveToStorage() {
+            localStorage.setItem('happySpellerCustomWords', JSON.stringify(state.words.custom));
+            localStorage.setItem('happySpellerSettings', JSON.stringify(state.settings));
+            localStorage.setItem('happySpellerProgress', JSON.stringify({
+                stars: state.stars,
+                completedWords: state.completedWords
+            }));
+        }
+
+        // Render word sets based on current selection
+        function renderWordSets() {
+            elements.wordsContainer.innerHTML = '';
+            const words = state.words[state.currentWordSet];
+            
+            words.forEach(word => {
+                const card = document.createElement('div');
+                card.className = 'word-card';
+                if (state.completedWords.includes(word)) {
+                    card.classList.add('starred');
+                }
+                
+                const wordText = document.createElement('div');
+                wordText.className = 'word-text';
+                wordText.textContent = formatWord(word);
+                card.appendChild(wordText);
+                
+                card.dataset.word = word;
+                elements.wordsContainer.appendChild(card);
+            });
+        }
+
+        // Format word based on current case setting
+        function formatWord(word) {
+            return state.settings.case === 'uppercase' ? word.toUpperCase() : word;
+        }
+
+        // Set up the on-screen keyboard
+        function setupKeyboard() {
+            const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+            elements.keyboard.innerHTML = '';
+            
+            letters.forEach(letter => {
+                const key = document.createElement('button');
+                key.className = 'key';
+                key.textContent = letter;
+                key.setAttribute('aria-label', `Key ${letter}`);
+                key.addEventListener('click', () => {
+                    elements.spellingInput.value += letter.toLowerCase();
+                    elements.spellingInput.focus();
+                });
+                elements.keyboard.appendChild(key);
+            });
+            
+            // Add backspace key
+            const backspace = document.createElement('button');
+            backspace.className = 'key';
+            backspace.innerHTML = '⌫';
+            backspace.setAttribute('aria-label', 'Backspace');
+            backspace.addEventListener('click', () => {
+                elements.spellingInput.value = elements.spellingInput.value.slice(0, -1);
+                elements.spellingInput.focus();
+            });
+            elements.keyboard.appendChild(backspace);
+            
+            // Add space key
+            const space = document.createElement('button');
+            space.className = 'key';
+            space.textContent = 'Space';
+            space.setAttribute('aria-label', 'Space');
+            space.addEventListener('click', () => {
+                elements.spellingInput.value += ' ';
+                elements.spellingInput.focus();
+            });
+            elements.keyboard.appendChild(space);
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            // Word card clicks
+            elements.wordsContainer.addEventListener('click', (e) => {
+                const card = e.target.closest('.word-card');
+                if (card) {
+                    startPractice(card.dataset.word);
+                }
+            });
+            
+            // Word set buttons
+            elements.wordSetBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    elements.wordSetBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    state.currentWordSet = btn.dataset.set;
+                    renderWordSets();
+                });
+            });
+            
+            // Mode buttons
+            elements.modeBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    elements.modeBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    state.currentMode = btn.dataset.mode;
+                    
+                    if (state.currentMode === 'words') {
+                        elements.wordsMode.style.display = 'block';
+                        elements.mathMode.style.display = 'none';
+                    } else {
+                        elements.wordsMode.style.display = 'none';
+                        elements.mathMode.style.display = 'block';
+                    }
+                });
+            });
+            
+            // Math tile clicks
+            elements.mathTiles.forEach(tile => {
+                tile.addEventListener('click', () => {
+                    alert('Math activities coming soon!');
+                });
+            });
+            
+            // Save words button
+            elements.saveWordsBtn.addEventListener('click', saveCustomWords);
+            
+            // Practice panel buttons
+            elements.hearAgain.addEventListener('click', () => speakWord(state.currentWord));
+            elements.soundOut.addEventListener('click', () => soundOutWord(state.currentWord));
+            elements.checkAnswer.addEventListener('click', checkAnswer);
+            elements.showWord.addEventListener('click', showWord);
+            elements.nextWord.addEventListener('click', closePractice);
+            elements.closePractice.addEventListener('click', closePractice);
+            
+            // Input field - allow Enter to submit
+            elements.spellingInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    checkAnswer();
+                }
+            });
+        }
+
+        // Start practice with a word
+        function startPractice(word) {
+            state.currentWord = word;
+            state.attempts = 0;
+            
+            // Update UI
+            elements.currentWordDisplay.textContent = formatWord(word);
+            elements.currentWordDisplay.classList.remove('placeholder');
+            elements.spellingInput.value = '';
+            elements.feedbackText.textContent = '';
+            elements.feedbackEmoji.textContent = '';
+            elements.showWord.style.display = 'none';
+            elements.nextWord.style.display = 'none';
+            elements.practicePanel.classList.add('active');
+            
+            // Speak the word
+            speakWord(word);
+        }
+
+        // Speak a word using Web Speech API
+        function speakWord(word) {
+            if (!word || !state.speechSynthesis) return;
+            
+            state.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(word);
+            utterance.volume = state.settings.muted ? 0 : state.settings.volume;
+            utterance.rate = 0.8;
+            state.speechSynthesis.speak(utterance);
+        }
+
+        // Sound out a word phonetically
+        function soundOutWord(word) {
+            if (!word || !state.speechSynthesis) return;
+            
+            state.speechSynthesis.cancel();
+            const letters = word.split('');
+            let delay = 0;
+            
+            letters.forEach(letter => {
+                setTimeout(() => {
+                    const utterance = new SpeechSynthesisUtterance(letter);
+                    utterance.volume = state.settings.muted ? 0 : state.settings.volume;
+                    utterance.rate = 0.6;
+                    state.speechSynthesis.speak(utterance);
+                }, delay);
+                delay += 600;
+            });
+            
+            setTimeout(() => {
+                const utterance = new SpeechSynthesisUtterance(word);
+                utterance.volume = state.settings.muted ? 0 : state.settings.volume;
+                utterance.rate = 0.8;
+                state.speechSynthesis.speak(utterance);
+            }, delay + 300);
+        }
+
+        // Check the user's answer
+        function checkAnswer() {
+            const userAnswer = elements.spellingInput.value.trim().toLowerCase();
+            const correctAnswer = state.currentWord.toLowerCase();
+            
+            if (userAnswer === correctAnswer) {
+                handleCorrectAnswer();
+            } else {
+                handleIncorrectAnswer();
+            }
+        }
+
+        // Handle correct answer
+        function handleCorrectAnswer() {
+            state.attempts = 0;
+            state.stars++;
+            
+            if (!state.completedWords.includes(state.currentWord)) {
+                state.completedWords.push(state.currentWord);
+            }
+            
+            // Update UI
+            elements.feedbackText.textContent = 'Great job!';
+            elements.feedbackEmoji.textContent = '😊';
+            elements.showWord.style.display = 'none';
+            elements.nextWord.style.display = 'block';
+            
+            // Show the word again
+            elements.currentWordDisplay.textContent = formatWord(state.currentWord) + ' ⭐';
+            
+            // Update stars display
+            updateStars();
+            
+            // Mark word card as completed
+            const wordCards = document.querySelectorAll('.word-card');
+            wordCards.forEach(card => {
+                if (card.dataset.word === state.currentWord) {
+                    card.classList.add('starred');
+                }
+            });
+            
+            // Save progress
+            saveToStorage();
+        }
+
+        // Handle incorrect answer
+        function handleIncorrectAnswer() {
+            state.attempts++;
+            
+            if (state.attempts === 1) {
+                elements.feedbackText.textContent = 'Try again!';
+                elements.feedbackEmoji.textContent = '🤔';
+            } else {
+                elements.feedbackText.textContent = 'Let\'s try another word';
+                elements.feedbackEmoji.textContent = '😊';
+                elements.showWord.style.display = 'block';
+                elements.nextWord.style.display = 'block';
+            }
+        }
+
+        // Show the word again
+        function showWord() {
+            elements.currentWordDisplay.textContent = formatWord(state.currentWord);
+            elements.currentWordDisplay.classList.remove('placeholder');
+            speakWord(state.currentWord);
+        }
+
+        // Close practice panel
+        function closePractice() {
+            elements.practicePanel.classList.remove('active');
+        }
+
+        // Update stars display
+        function updateStars() {
+            elements.starsCount.textContent = state.stars % 5;
+        }
+
+        // Save custom words
+        function saveCustomWords() {
+            const newWords = elements.newWordsInput.value.split(',')
+                .map(word => word.trim())
+                .filter(word => word.length > 0);
+            
+            if (newWords.length > 0) {
+                state.words.custom = [...new Set([...state.words.custom, ...newWords])];
+                elements.newWordsInput.value = '';
+                renderWordSets();
+                saveToStorage();
+            }
+        }
+
+        // Initialize the app when the DOM is loaded
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

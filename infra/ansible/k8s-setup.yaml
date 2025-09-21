@@ -1,0 +1,119 @@
+---
+- name: Setup Kubernetes cluster for Happy Speller
+  hosts: localhost
+  connection: local
+  vars:
+    namespace: "demo"
+    app_name: "happy-speller"
+    registry: "registry.local:5000"
+  
+  tasks:
+  - name: Create namespace
+    kubernetes.core.k8s:
+      name: "{{ namespace }}"
+      api_version: v1
+      kind: Namespace
+      state: present
+      definition:
+        metadata:
+          name: "{{ namespace }}"
+          labels:
+            environment: "demo"
+            managed-by: "ansible"
+  
+  - name: Create ConfigMap for app configuration
+    kubernetes.core.k8s:
+      name: "{{ app_name }}-config"
+      namespace: "{{ namespace }}"
+      api_version: v1
+      kind: ConfigMap
+      state: present
+      definition:
+        metadata:
+          name: "{{ app_name }}-config"
+          namespace: "{{ namespace }}"
+        data:
+          NODE_ENV: "production"
+          PORT: "8080"
+  
+  - name: Create ServiceAccount
+    kubernetes.core.k8s:
+      name: "{{ app_name }}-sa"
+      namespace: "{{ namespace }}"
+      api_version: v1
+      kind: ServiceAccount
+      state: present
+      definition:
+        metadata:
+          name: "{{ app_name }}-sa"
+          namespace: "{{ namespace }}"
+  
+  - name: Create Role for the ServiceAccount
+    kubernetes.core.k8s:
+      name: "{{ app_name }}-role"
+      namespace: "{{ namespace }}"
+      api_version: rbac.authorization.k8s.io/v1
+      kind: Role
+      state: present
+      definition:
+        metadata:
+          name: "{{ app_name }}-role"
+          namespace: "{{ namespace }}"
+        rules:
+        - apiGroups: [""]
+          resources: ["pods", "services", "configmaps", "secrets"]
+          verbs: ["get", "list", "watch"]
+  
+  - name: Create RoleBinding
+    kubernetes.core.k8s:
+      name: "{{ app_name }}-rolebinding"
+      namespace: "{{ namespace }}"
+      api_version: rbac.authorization.k8s.io/v1
+      kind: RoleBinding
+      state: present
+      definition:
+        metadata:
+          name: "{{ app_name }}-rolebinding"
+          namespace: "{{ namespace }}"
+        subjects:
+        - kind: ServiceAccount
+          name: "{{ app_name }}-sa"
+          namespace: "{{ namespace }}"
+        roleRef:
+          kind: Role
+          name: "{{ app_name }}-role"
+          apiGroup: rbac.authorization.k8s.io
+  
+  - name: Create NetworkPolicy
+    kubernetes.core.k8s:
+      name: "{{ app_name }}-netpol"
+      namespace: "{{ namespace }}"
+      api_version: networking.k8s.io/v1
+      kind: NetworkPolicy
+      state: present
+      definition:
+        metadata:
+          name: "{{ app_name }}-netpol"
+          namespace: "{{ namespace }}"
+        spec:
+          podSelector:
+            matchLabels:
+              app: "{{ app_name }}"
+          policyTypes:
+          - Ingress
+          - Egress
+          ingress:
+          - from:
+            - namespaceSelector:
+                matchLabels:
+                  name: "{{ namespace }}"
+            ports:
+            - protocol: TCP
+              port: 8080
+          egress:
+          - to: []
+            ports:
+            - protocol: TCP
+              port: 53
+            - protocol: UDP
+              port: 53
