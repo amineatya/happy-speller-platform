@@ -105,3 +105,142 @@ resource "helm_release" "grafana" {
     value = "true"
   }
 }
+
+# Create network policies for security
+resource "kubernetes_network_policy" "happy_speller_network_policy" {
+  count = var.enable_network_policies ? 1 : 0
+  
+  metadata {
+    name      = "happy-speller-network-policy"
+    namespace = kubernetes_namespace.demo.metadata[0].name
+    labels = {
+      app        = "happy-speller"
+      managed-by = "terraform"
+    }
+  }
+
+  spec {
+    pod_selector {
+      match_labels = {
+        app = "happy-speller"
+      }
+    }
+    
+    policy_types = ["Ingress", "Egress"]
+    
+    ingress {
+      from {
+        namespace_selector {
+          match_labels = {
+            name = kubernetes_namespace.demo.metadata[0].name
+          }
+        }
+      }
+      
+      ports {
+        protocol = "TCP"
+        port     = "8080"
+      }
+    }
+    
+    egress {
+      # Allow DNS
+      to {
+        namespace_selector {
+          match_labels = {
+            name = "kube-system"
+          }
+        }
+      }
+      
+      ports {
+        protocol = "UDP"
+        port     = "53"
+      }
+    }
+    
+    egress {
+      # Allow outbound HTTPS for API calls
+      ports {
+        protocol = "TCP"
+        port     = "443"
+      }
+    }
+  }
+}
+
+# Create resource quotas
+resource "kubernetes_resource_quota" "demo_quota" {
+  count = var.enable_resource_quotas ? 1 : 0
+  
+  metadata {
+    name      = "demo-quota"
+    namespace = kubernetes_namespace.demo.metadata[0].name
+  }
+  
+  spec {
+    hard = {
+      "requests.cpu"    = var.resource_quota.requests_cpu
+      "requests.memory" = var.resource_quota.requests_memory
+      "limits.cpu"      = var.resource_quota.limits_cpu
+      "limits.memory"   = var.resource_quota.limits_memory
+      "pods"            = var.resource_quota.pods
+      "services"        = var.resource_quota.services
+      "persistentvolumeclaims" = var.resource_quota.pvc
+    }
+  }
+}
+
+# Create limit ranges
+resource "kubernetes_limit_range" "demo_limit_range" {
+  count = var.enable_limit_ranges ? 1 : 0
+  
+  metadata {
+    name      = "demo-limit-range"
+    namespace = kubernetes_namespace.demo.metadata[0].name
+  }
+  
+  spec {
+    limit {
+      type = "Container"
+      default = {
+        cpu    = var.limit_range.default_cpu
+        memory = var.limit_range.default_memory
+      }
+      default_request = {
+        cpu    = var.limit_range.default_request_cpu
+        memory = var.limit_range.default_request_memory
+      }
+    }
+  }
+}
+
+# Create service monitor for Prometheus (if monitoring is enabled)
+resource "kubernetes_manifest" "happy_speller_service_monitor" {
+  count = var.enable_monitoring ? 1 : 0
+  
+  manifest = {
+    apiVersion = "monitoring.coreos.com/v1"
+    kind       = "ServiceMonitor"
+    metadata = {
+      name      = "happy-speller-service-monitor"
+      namespace = kubernetes_namespace.demo.metadata[0].name
+      labels = {
+        app        = "happy-speller"
+        managed-by = "terraform"
+      }
+    }
+    spec = {
+      selector = {
+        matchLabels = {
+          app = "happy-speller"
+        }
+      }
+      endpoints = [{
+        port     = "http"
+        path     = "/healthz"
+        interval = "30s"
+      }]
+    }
+  }
+}

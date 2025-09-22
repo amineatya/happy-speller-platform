@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "jest": "^29.5.0",
+    "jest-junit": "^16.0.0",
     "supertest": "^6.3.3",
     "eslint": "^8.38.0",
     "nodemon": "^2.0.22"
@@ -24,7 +25,23 @@
   "jest": {
     "testEnvironment": "node",
     "coverageDirectory": "./coverage/",
-    "collectCoverage": true
+    "collectCoverage": true,
+    "coverageReporters": ["text", "lcov", "html"],
+    "collectCoverageFrom": [
+      "server.js",
+      "public/**/*.js",
+      "!node_modules/**",
+      "!coverage/**",
+      "!test/**"
+    ],
+    "testMatch": ["**/test/**/*.test.js"],
+    "reporters": [
+      "default",
+      ["jest-junit", {
+        "outputDirectory": ".",
+        "outputName": "junit.xml"
+      }]
+    ]
   },
   "eslintConfig": {
     "env": {

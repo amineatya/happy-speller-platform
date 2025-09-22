@@ -1,9 +1,12 @@
 replicaCount: 2
 
 image:
-  repository: {{REGISTRY}}/happy-speller
+  repository: registry.local:5000/happy-speller
   tag: latest
   pullPolicy: IfNotPresent
+  # Override in CI/CD pipeline:
+  # --set image.repository=${REGISTRY}/${APP_NAME}
+  # --set image.tag=${BUILD_NUMBER}-${SHORT_COMMIT}
 
 service:
   type: ClusterIP
@@ -39,3 +42,51 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+# Security context
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+  readOnlyRootFilesystem: false
+
+# Pod security context
+podSecurityContext:
+  seccompProfile:
+    type: RuntimeDefault
+
+# Environment variables
+env:
+  NODE_ENV: production
+  PORT: 8080
+
+# Service account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# Network policy
+networkPolicy:
+  enabled: false
+  ingress: []
+  egress: []
+
+# Monitoring
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: false
+    interval: 30s
+    path: /healthz
+
+# Additional labels
+labels:
+  app.kubernetes.io/name: happy-speller
+  app.kubernetes.io/component: web
+  app.kubernetes.io/part-of: learning-platform

@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Chart.Name }}-config
+  labels:
+    app: {{ .Chart.Name }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+    {{- with .Values.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+data:
+  # Application configuration
+  APP_NAME: {{ .Chart.Name | quote }}
+  APP_VERSION: {{ .Chart.AppVersion | quote }}
+  NODE_ENV: {{ .Values.env.NODE_ENV | quote }}
+  PORT: {{ .Values.env.PORT | quote }}
+  
+  # Feature flags
+  ENABLE_MATH_MODE: "true"
+  ENABLE_CUSTOM_WORDS: "true"
+  ENABLE_PHONICS: "true"
+  
+  # Educational content settings
+  DEFAULT_DIFFICULTY: "L1_sight_preprimer"
+  MAX_ATTEMPTS: "2"
+  STARS_PER_DAY: "5"
+  
+  # Performance settings
+  SESSION_TIMEOUT: "1800"
+  CACHE_TTL: "3600"
