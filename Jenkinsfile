@@ -1,7 +1,5 @@
 pipeline {
-    agent {
-        label 'master'  // or 'any' if you have multiple nodes
-    }
+    agent any
     
     environment {
         GITEA_BASE = 'http://192.168.50.130:3000'
