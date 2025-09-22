@@ -3,10 +3,6 @@ pipeline {
         label 'master'  // or 'any' if you have multiple nodes
     }
     
-    tools {
-        nodejs '20'  // Make sure Node.js 20 is configured in Jenkins
-    }
-    
     environment {
         GITEA_BASE = 'http://192.168.50.130:3000'
         JENKINS_BASE = 'http://192.168.50.247:8080'
@@ -40,11 +36,20 @@ pipeline {
         stage('Build') {
             steps {
                 sh '''
+                    # Check if Node.js is available
+                    if ! command -v node &> /dev/null; then
+                        echo "❌ Node.js not found. Please install Node.js on the Jenkins agent."
+                        exit 1
+                    fi
+                    
                     echo "Using Node.js version:"
                     node --version
+                    npm --version
+                    
                     echo "Building application..."
                     cd app
                     npm install
+                    
                     # Skip lint if SKIP_LINT is set to true
                     if [ "$SKIP_LINT" != "true" ]; then
                         npm run lint || { echo "Linting failed but continuing"; }
