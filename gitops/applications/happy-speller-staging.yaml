@@ -11,7 +11,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/amineatya/happy-speller-platform.git  # Update with your actual repo
+    repoURL: http://192.168.50.130:3000/amine/happy-speller-platform.git  # Update with your actual repo
     targetRevision: HEAD
     path: gitops/environments/staging
   destination:
