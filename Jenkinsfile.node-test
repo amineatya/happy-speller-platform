@@ -1,0 +1,126 @@
+pipeline {
+  agent any
+  
+  // Add NodeJS tool configuration
+  tools {
+    nodejs 'NodeJS-18' // Make sure this matches your Jenkins NodeJS tool configuration
+  }
+  
+  environment {
+    // Set Node.js path explicitly
+    PATH = "${tool 'NodeJS-18'}/bin:${env.PATH}"
+  }
+  
+  stages {
+    stage('Check Node') {
+      steps {
+        echo '🔍 Checking Node.js environment...'
+        sh '''
+          echo "=== ENVIRONMENT ==="
+          echo "PATH: $PATH"
+          echo "USER: $(whoami)"
+          echo "WORKSPACE: $WORKSPACE"
+          echo ""
+          
+          echo "=== NODE.JS DETECTION ==="
+          # Check if Node.js is in PATH
+          if command -v node >/dev/null 2>&1; then
+            echo "✅ Node.js found in PATH"
+            echo "Node.js location: $(which node)"
+            echo "Node.js version: $(node -v)"
+          else
+            echo "❌ Node.js not found in PATH"
+          fi
+          
+          # Check if npm is available
+          if command -v npm >/dev/null 2>&1; then
+            echo "✅ npm found in PATH"
+            echo "npm location: $(which npm)"
+            echo "npm version: $(npm -v)"
+          else
+            echo "❌ npm not found in PATH"
+          fi
+          
+          echo ""
+          echo "=== SEARCHING FOR NODE.JS ==="
+          # Search for Node.js installations
+          find /usr -name "node" -type f 2>/dev/null | head -5 || echo "No Node.js found in /usr"
+          find /opt -name "node" -type f 2>/dev/null | head -5 || echo "No Node.js found in /opt"
+          find /var/lib/jenkins -name "node" -type f 2>/dev/null | head -5 || echo "No Node.js found in Jenkins home"
+          
+          echo ""
+          echo "=== JENKINS TOOLS ==="
+          # Check Jenkins tools directory
+          if [ -d "/var/lib/jenkins/tools" ]; then
+            echo "Jenkins tools directory contents:"
+            ls -la /var/lib/jenkins/tools/ || echo "Cannot list tools directory"
+          fi
+        '''
+      }
+    }
+    
+    stage('Install Node.js (Fallback)') {
+      when {
+        not {
+          expression {
+            try {
+              sh 'node -v'
+              return true
+            } catch (Exception e) {
+              return false
+            }
+          }
+        }
+      }
+      steps {
+        echo '📦 Installing Node.js as fallback...'
+        sh '''
+          echo "Installing Node.js 18.x via NodeSource..."
+          # Download and install NodeSource repo
+          curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+          
+          # Install Node.js
+          sudo apt-get install -y nodejs
+          
+          # Verify installation
+          echo "✅ Node.js installed:"
+          node -v
+          npm -v
+        '''
+      }
+    }
+    
+    stage('Test Node.js') {
+      steps {
+        echo '🧪 Testing Node.js functionality...'
+        sh '''
+          # Test basic Node.js functionality
+          echo "Testing basic Node.js commands..."
+          node -e "console.log('Hello from Node.js!')"
+          
+          # Test npm
+          npm --version
+          
+          # Create a simple test
+          echo "const os = require('os'); console.log('Platform:', os.platform()); console.log('Node version:', process.version);" > test.js
+          node test.js
+          rm test.js
+          
+          echo "✅ Node.js is working correctly!"
+        '''
+      }
+    }
+  }
+  
+  post {
+    always {
+      echo '✅ Node.js detection pipeline completed!'
+    }
+    success {
+      echo '🎉 Node.js is properly configured!'
+    }
+    failure {
+      echo '❌ Node.js configuration issues detected!'
+    }
+  }
+}
