@@ -16,7 +16,7 @@ commonLabels:
 
 images:
   - name: registry.local:5000/happy-speller
-    newTag: latest
+    newTag: 20250923025549-7309383
 
 patchesStrategicMerge:
   - deployment-patch.yaml
