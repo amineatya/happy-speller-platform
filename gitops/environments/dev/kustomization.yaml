@@ -15,8 +15,8 @@ commonLabels:
   app.kubernetes.io/version: latest
 
 images:
-  - name: registry.local:5000/happy-speller
-    newTag: 20250923025549-7309383
+  - name: nginx
+    newTag: alpine
 
 patchesStrategicMerge:
   - deployment-patch.yaml
