@@ -1,0 +1,216 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-notifications-cm
+  namespace: argocd
+data:
+  service.webhook.jenkins: |
+    url: http://192.168.50.247:8080/generic-webhook-trigger/invoke
+    headers:
+    - name: Content-Type
+      value: application/json
+  
+  template.app-deployed: |
+    webhook:
+      jenkins:
+        method: POST
+        body: |
+          {
+            "app": "{{.app.metadata.name}}",
+            "status": "{{.app.status.operationState.phase}}",
+            "environment": "{{.app.metadata.labels.environment}}",
+            "revision": "{{.app.status.sync.revision}}",
+            "timestamp": "{{.app.status.operationState.finishedAt}}"
+          }
+  
+  template.app-health-degraded: |
+    webhook:
+      jenkins:
+        method: POST
+        body: |
+          {
+            "app": "{{.app.metadata.name}}",
+            "status": "degraded",
+            "health": "{{.app.status.health.status}}",
+            "environment": "{{.app.metadata.labels.environment}}",
+            "message": "Application health is degraded"
+          }
+  
+  template.app-sync-failed: |
+    webhook:
+      jenkins:
+        method: POST
+        body: |
+          {
+            "app": "{{.app.metadata.name}}",
+            "status": "sync-failed",
+            "environment": "{{.app.metadata.labels.environment}}",
+            "error": "{{.app.status.operationState.message}}",
+            "timestamp": "{{.app.status.operationState.finishedAt}}"
+          }
+  
+  trigger.on-deployed: |
+    - description: Application is synced and healthy
+      send:
+      - app-deployed
+      when: app.status.operationState.phase in ['Succeeded'] and app.status.health.status == 'Healthy'
+  
+  trigger.on-health-degraded: |
+    - description: Application has degraded health
+      send:
+      - app-health-degraded
+      when: app.status.health.status == 'Degraded'
+  
+  trigger.on-sync-failed: |
+    - description: Application sync is failed
+      send:
+      - app-sync-failed
+      when: app.status.operationState.phase in ['Error', 'Failed']
+  
+  subscriptions: |
+    # Subscribe all happy-speller applications to deployment notifications
+    - recipients:
+      - jenkins
+      triggers:
+      - on-deployed
+      - on-health-degraded
+      - on-sync-failed
+      selector: app.kubernetes.io/name=happy-speller
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: argocd-notifications-secret
+  namespace: argocd
+type: Opaque
+stringData:
+  jenkins-webhook-url: "http://192.168.50.247:8080/generic-webhook-trigger/invoke"
+---
+# ArgoCD Notifications Controller
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argocd-notifications-controller
+  namespace: argocd
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-notifications-controller
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: argocd-notifications-controller
+    spec:
+      serviceAccountName: argocd-notifications-controller
+      containers:
+      - name: argocd-notifications-controller
+        image: quay.io/argoproj/argocd:v2.8.4
+        imagePullPolicy: Always
+        command:
+        - argocd-notifications
+        - controller
+        - --loglevel=info
+        - --namespace=argocd
+        - --argocd-repo-server=argocd-repo-server:8081
+        env:
+        - name: ARGOCD_NOTIFICATIONS_CONTROLLER_LOGFORMAT
+          value: text
+        ports:
+        - name: metrics
+          containerPort: 9001
+          protocol: TCP
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        volumeMounts:
+        - name: tls-certs
+          mountPath: /app/config/tls
+        - name: argocd-repo-server-tls
+          mountPath: /app/config/reposerver/tls
+      volumes:
+      - name: tls-certs
+        configMap:
+          name: argocd-tls-certs-cm
+      - name: argocd-repo-server-tls
+        secret:
+          secretName: argocd-repo-server-tls
+          optional: true
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: argocd-notifications-controller
+  namespace: argocd
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: argocd-notifications-controller
+rules:
+- apiGroups:
+  - argoproj.io
+  resources:
+  - applications
+  - appprojects
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  - secrets
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resourceNames:
+  - argocd-notifications-cm
+  resources:
+  - configmaps
+  verbs:
+  - get
+- apiGroups:
+  - ""
+  resourceNames:
+  - argocd-notifications-secret
+  resources:
+  - secrets
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: argocd-notifications-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: argocd-notifications-controller
+subjects:
+- kind: ServiceAccount
+  name: argocd-notifications-controller
+  namespace: argocd
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: argocd-notifications-controller-metrics
+  namespace: argocd
+spec:
+  selector:
+    app.kubernetes.io/name: argocd-notifications-controller
+  ports:
+  - name: metrics
+    port: 9001
+    protocol: TCP
+    targetPort: 9001

@@ -1,0 +1,35 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: happy-speller-staging
+
+namespace: happy-speller-staging
+
+resources:
+  - ../../base
+
+commonLabels:
+  app.kubernetes.io/name: happy-speller
+  app.kubernetes.io/environment: staging
+  app.kubernetes.io/version: stable
+
+images:
+  - name: registry.local:5000/happy-speller
+    newTag: stable
+
+patchesStrategicMerge:
+  - deployment-patch.yaml
+  - service-patch.yaml
+
+configMapGenerator:
+  - name: happy-speller-config
+    literals:
+      - ENVIRONMENT=staging
+      - LOG_LEVEL=info
+      - NODE_ENV=production
+      - API_BASE_URL=http://happy-speller-staging.demo.svc.cluster.local:8080
+
+replicas:
+  - name: happy-speller
+    count: 2

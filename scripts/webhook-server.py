@@ -1,0 +1,164 @@
+#!/usr/bin/env python3
+"""
+Simple webhook server for automatic deployment
+Usage: python3 scripts/webhook-server.py
+"""
+import json
+import subprocess
+import os
+import hmac
+import hashlib
+from http.server import HTTPServer, BaseHTTPRequestHandler
+from urllib.parse import urlparse, parse_qs
+import logging
+
+# Configuration
+PORT = 8999
+WEBHOOK_SECRET = "9b407fc263328ce9f89b41721d80b48a306ece8d"  # Your Gitea token
+PROJECT_DIR = "/Users/amineatya/early/happy-speller-platform"
+
+# Setup logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+class WebhookHandler(BaseHTTPRequestHandler):
+    def log_message(self, format, *args):
+        logger.info("%s - %s" % (self.address_string(), format % args))
+    
+    def do_POST(self):
+        if self.path == '/webhook':
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            
+            # Verify webhook secret (optional)
+            signature = self.headers.get('X-Gitea-Signature')
+            if signature and WEBHOOK_SECRET:
+                expected_signature = 'sha256=' + hmac.new(
+                    WEBHOOK_SECRET.encode('utf-8'),
+                    post_data,
+                    hashlib.sha256
+                ).hexdigest()
+                
+                if not hmac.compare_digest(signature, expected_signature):
+                    logger.warning("Invalid webhook signature")
+                    self.send_response(401)
+                    self.end_headers()
+                    return
+            
+            try:
+                # Parse webhook payload
+                payload = json.loads(post_data.decode('utf-8'))
+                repo_url = payload.get('repository', {}).get('clone_url', '')
+                branch = payload.get('ref', '').replace('refs/heads/', '')
+                commits = payload.get('commits', [])
+                
+                logger.info(f"🔔 Webhook received: {len(commits)} commits to {branch}")
+                logger.info(f"📂 Repository: {repo_url}")
+                
+                # Only deploy on main branch pushes
+                if branch == 'main' and commits:
+                    logger.info("🚀 Triggering deployment...")
+                    self.trigger_deployment(commits[-1])  # Use latest commit
+                    
+                    self.send_response(200)
+                    self.send_header('Content-type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(json.dumps({
+                        'status': 'success',
+                        'message': 'Deployment triggered',
+                        'commits': len(commits)
+                    }).encode())
+                else:
+                    self.send_response(200)
+                    self.send_header('Content-type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(json.dumps({
+                        'status': 'ignored',
+                        'message': f'Not deploying branch: {branch}'
+                    }).encode())
+                    
+            except Exception as e:
+                logger.error(f"❌ Error processing webhook: {e}")
+                self.send_response(500)
+                self.end_headers()
+        else:
+            self.send_response(404)
+            self.end_headers()
+    
+    def do_GET(self):
+        if self.path == '/':
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            self.wfile.write(b"""
+            <html><body>
+            <h1>🚀 Happy Speller Deployment Webhook Server</h1>
+            <p>✅ Server is running and ready to receive webhooks</p>
+            <p>📋 Send POST requests to <code>/webhook</code></p>
+            <p>🔗 Configure Gitea webhook to: <code>http://YOUR_IP:8999/webhook</code></p>
+            </body></html>
+            """)
+        else:
+            self.send_response(404)
+            self.end_headers()
+    
+    def trigger_deployment(self, commit_info):
+        """Trigger the deployment script"""
+        try:
+            # Change to project directory
+            os.chdir(PROJECT_DIR)
+            
+            # Set environment variables
+            env = os.environ.copy()
+            env['BUILD_NUMBER'] = f"webhook-{commit_info.get('timestamp', 'unknown')}"
+            env['GIT_COMMIT'] = commit_info.get('id', 'unknown')[:8]
+            
+            # Pull latest changes
+            logger.info("📥 Pulling latest changes...")
+            subprocess.run(['git', 'pull', 'origin', 'main'], 
+                         check=True, env=env, capture_output=True)
+            
+            # Run deployment script
+            logger.info("🎯 Running deployment script...")
+            result = subprocess.run(['/bin/bash', 'scripts/simple-auto-deploy.sh'], 
+                                  env=env, capture_output=True, text=True)
+            
+            if result.returncode == 0:
+                logger.info("✅ Deployment completed successfully")
+            else:
+                logger.error(f"❌ Deployment failed: {result.stderr}")
+                
+        except subprocess.CalledProcessError as e:
+            logger.error(f"❌ Git pull failed: {e}")
+        except Exception as e:
+            logger.error(f"❌ Deployment error: {e}")
+
+def main():
+    server_address = ('', PORT)
+    httpd = HTTPServer(server_address, WebhookHandler)
+    
+    print(f"""
+🚀 Happy Speller Webhook Server Starting...
+
+📋 Configuration:
+   Port: {PORT}
+   Project: {PROJECT_DIR}
+   Webhook URL: http://localhost:{PORT}/webhook
+   
+🔗 Configure your Gitea webhook to:
+   URL: http://YOUR_MACHINE_IP:{PORT}/webhook
+   Secret: {WEBHOOK_SECRET[:8]}...
+   Content Type: application/json
+   Events: Push events
+
+✅ Server ready! Press Ctrl+C to stop.
+    """)
+    
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        print("\n🛑 Shutting down webhook server...")
+        httpd.shutdown()
+
+if __name__ == '__main__':
+    main()

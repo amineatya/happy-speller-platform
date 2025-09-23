@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: happy-speller-prod
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: happy-speller
+    app.kubernetes.io/environment: prod
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/amineatya/happy-speller-platform.git  # Update with your actual repo
+    targetRevision: HEAD
+    path: gitops/environments/prod
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: happy-speller-prod
+  syncPolicy:
+    # Manual sync only for production - requires approval
+    syncOptions:
+    - CreateNamespace=true
+    - PrunePropagationPolicy=foreground
+    - PruneLast=true
+  revisionHistoryLimit: 20

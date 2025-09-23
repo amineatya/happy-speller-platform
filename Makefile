@@ -299,6 +299,42 @@ pipeline: bootstrap ci deploy ## Run complete pipeline (bootstrap + CI + deploy)
 	@echo -e "$(GREEN)[SUCCESS]$(NC) Complete pipeline executed successfully!"
 	@echo -e "$(BLUE)[INFO]$(NC) Application is now ready at: kubectl -n $(NAMESPACE) port-forward svc/$(APP_NAME) 8080:8080"
 
+# GitOps targets
+.PHONY: gitops-install
+gitops-install: ## Install ArgoCD for GitOps
+	@echo -e "$(BLUE)[INFO]$(NC) Installing ArgoCD..."
+	./gitops/bootstrap/install-argocd.sh
+	@echo -e "$(GREEN)[SUCCESS]$(NC) ArgoCD installation completed"
+
+.PHONY: gitops-deploy
+gitops-deploy: ## Deploy applications via GitOps
+	@echo -e "$(BLUE)[INFO]$(NC) Deploying applications via ArgoCD..."
+	kubectl apply -f gitops/applications/
+	@echo -e "$(GREEN)[SUCCESS]$(NC) GitOps applications deployed"
+
+.PHONY: gitops-status
+gitops-status: ## Check GitOps deployment status
+	@echo -e "$(BLUE)[INFO]$(NC) Checking GitOps status..."
+	./scripts/gitops/status.sh
+
+.PHONY: gitops-promote
+gitops-promote: ## Promote from dev to staging (interactive)
+	@echo -e "$(BLUE)[INFO]$(NC) Starting promotion from dev to staging..."
+	./scripts/gitops/promote.sh dev staging
+
+.PHONY: gitops-promote-prod
+gitops-promote-prod: ## Promote from staging to production (interactive)
+	@echo -e "$(BLUE)[INFO]$(NC) Starting promotion from staging to production..."
+	./scripts/gitops/promote.sh staging prod
+
+.PHONY: argocd-ui
+argocd-ui: ## Open ArgoCD UI (port-forward)
+	@echo -e "$(BLUE)[INFO]$(NC) Starting port-forward to ArgoCD UI..."
+	@echo -e "$(YELLOW)[NOTE]$(NC) ArgoCD UI will be available at http://localhost:8080"
+	@echo -e "$(YELLOW)[NOTE]$(NC) Username: admin, Password: $$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d 2>/dev/null || echo 'Not available')"
+	@echo -e "$(YELLOW)[NOTE]$(NC) Press Ctrl+C to stop port-forward"
+	kubectl port-forward svc/argocd-server -n argocd 8080:443
+
 # Version and information targets
 .PHONY: version
 version: ## Show version information

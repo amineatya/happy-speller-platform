@@ -1,0 +1,7 @@
+#!/bin/bash
+# Quick deployment shortcut
+# Usage: ./deploy [message]
+
+DEPLOY_MSG=${1:-"Quick deployment via deploy script"}
+echo "🚀 Quick Deploy: $DEPLOY_MSG"
+./scripts/git-deploy.sh "$DEPLOY_MSG"
