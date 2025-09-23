@@ -13,6 +13,8 @@ pipeline {
         REGISTRY = 'registry.local:5000'
         NAMESPACE = 'demo'
         APP_NAME = 'happy-speller'
+        // Default to not using HTML Publisher unless explicitly enabled
+        ENABLE_HTML_PUBLISHER = 'false'
         // Set Node.js path explicitly
         PATH = "${tool 'NodeJS-18'}/bin:${env.PATH}"
     }
@@ -216,24 +218,37 @@ EOF
                             echo "⚠️ JUnit report failed: ${e.getMessage()}"
                         }
                         
-                        // Handle coverage reports gracefully
+                            // Handle coverage reports gracefully
                         try {
                             if (fileExists('app/coverage/lcov-report/index.html')) {
-                                // Check if publishHTML plugin is available
+                                // Check if publishHTML plugin is available with safe guard
                                 script {
                                     try {
-                                        publishHTML(target: [
-                                            allowMissing: true,
-                                            alwaysLinkToLastBuild: false,
-                                            keepAll: true,
-                                            reportDir: 'app/coverage',
-                                            reportFiles: 'lcov-report/index.html',
-                                            reportName: 'Jest Coverage Report',
-                                            reportTitles: ''
-                                        ])
-                                        echo "✅ Coverage report published successfully"
+                                        if (env.ENABLE_HTML_PUBLISHER == 'true') {
+                                            publishHTML(target: [
+                                                allowMissing: true,
+                                                alwaysLinkToLastBuild: false,
+                                                keepAll: true,
+                                                reportDir: 'app/coverage',
+                                                reportFiles: 'lcov-report/index.html',
+                                                reportName: 'Jest Coverage Report',
+                                                reportTitles: ''
+                                            ])
+                                            echo "✅ Coverage report published successfully"
+                                        } else {
+                                            echo "HTML Publisher disabled or not installed; skipping publishHTML"
+                                            echo "📁 Coverage report available at: app/coverage/lcov-report/index.html"
+                                            
+                                            // Alternative: Archive the coverage report as build artifacts
+                                            try {
+                                                archiveArtifacts artifacts: 'app/coverage/**/*', allowEmptyArchive: true, fingerprint: false
+                                                echo "✅ Coverage report archived as build artifact"
+                                            } catch (Exception archiveError) {
+                                                echo "⚠️ Could not archive coverage report: ${archiveError.getMessage()}"
+                                            }
+                                        }
                                     } catch (Exception htmlError) {
-                                        echo "⚠️ publishHTML plugin not available: ${htmlError.getMessage()}"
+                                        echo "⚠️ Error handling coverage report: ${htmlError.getMessage()}"
                                         echo "📁 Coverage report available at: app/coverage/lcov-report/index.html"
                                         
                                         // Alternative: Archive the coverage report as build artifacts
@@ -424,6 +439,38 @@ EOF
             script {
                 echo "Pipeline completed. Result: ${currentBuild.result ?: 'SUCCESS'}"
                 echo "Duration: ${currentBuild.durationString}"
+                
+                // Archive coverage report as artifact if it exists
+                if (fileExists('app/coverage')) {
+                    try {
+                        // Safe guard for HTML Publisher
+                        if (env.ENABLE_HTML_PUBLISHER == 'true') {
+                            publishHTML([
+                                allowMissing: true,
+                                alwaysLinkToLastBuild: false,
+                                keepAll: true,
+                                reportDir: 'app/coverage/lcov-report',
+                                reportFiles: 'index.html',
+                                reportName: 'Jest Coverage Report'
+                            ])
+                            echo "✅ Coverage report published via HTML Publisher"
+                        } else {
+                            echo "HTML Publisher disabled or not installed; skipping publishHTML"
+                            // Fall back to archiving as artifacts
+                            archiveArtifacts artifacts: 'app/coverage/**/*', allowEmptyArchive: true, fingerprint: false
+                            echo "✅ Coverage report archived as build artifact"
+                        }
+                    } catch (Exception e) {
+                        echo "⚠️ Failed to handle coverage report: ${e.getMessage()}"
+                        // Try to archive as a last resort
+                        try {
+                            archiveArtifacts artifacts: 'app/coverage/**/*', allowEmptyArchive: true, fingerprint: false
+                            echo "✅ Coverage report archived as build artifact (fallback)"
+                        } catch (Exception archiveError) {
+                            echo "⚠️ Failed to archive coverage: ${archiveError.getMessage()}"
+                        }
+                    }
+                }
             }
             cleanWs()
         }
@@ -439,18 +486,19 @@ def updateGiteaStatus(commitSha, state, description, context) {
     
     try {
         withCredentials([string(credentialsId: 'gitea-token', variable: 'GITEA_TOKEN')]) {
-            sh """
+            // Use single quotes for heredoc to prevent Groovy interpolation of GITEA_TOKEN
+            sh '''
                 curl -X POST \
-                  -H "Authorization: token ${GITEA_TOKEN}" \
+                  -H "Authorization: token $GITEA_TOKEN" \
                   -H "Content-Type: application/json" \
-                  -d '{
-                    "state": "${state}",
-                    "target_url": "${env.JENKINS_BASE}/job/${env.JOB_NAME}/${env.BUILD_NUMBER}",
-                    "description": "${description}",
-                    "context": "${context}"
-                  }' \
-                  ${env.GITEA_BASE}/api/v1/repos/amine/happy-speller-platform/statuses/${commitSha}
-            """
+                  -d "{\
+                    \"state\": \"'''+ state + '''\",\
+                    \"target_url\": \"'''+ env.JENKINS_BASE +'''/job/'''+ env.JOB_NAME +'''/'''+ env.BUILD_NUMBER +'''\",\
+                    \"description\": \"'''+ description + '''\",\
+                    \"context\": \"'''+ context + '''\"\
+                  }" \
+                  '''+ env.GITEA_BASE +'''/api/v1/repos/amine/happy-speller-platform/statuses/'''+ commitSha +'''
+            '''
             echo "✅ Updated Gitea status: ${state}"
         }
     } catch (Exception e) {
