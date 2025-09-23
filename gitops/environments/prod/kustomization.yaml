@@ -15,7 +15,7 @@ commonLabels:
   app.kubernetes.io/version: release
 
 images:
-  - name: httpd
+  - name: nginx
     newTag: alpine
 
 patchesJson6902:

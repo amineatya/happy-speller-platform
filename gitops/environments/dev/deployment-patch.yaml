@@ -2,7 +2,7 @@
   path: /spec/template/spec/containers/0
   value:
     name: happy-speller
-    image: httpd:alpine
+    image: nginx:alpine
     imagePullPolicy: Always
     ports:
     - containerPort: 80
@@ -45,11 +45,11 @@
       capabilities:
         drop:
         - ALL
-      runAsUser: 33
-      runAsGroup: 33
+      runAsUser: 101
+      runAsGroup: 101
 - op: replace
   path: /spec/template/spec/securityContext
   value:
-    fsGroup: 33
+    fsGroup: 101
     runAsNonRoot: true
-    runAsUser: 33
+    runAsUser: 101
