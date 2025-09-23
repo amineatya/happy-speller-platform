@@ -219,18 +219,37 @@ EOF
                         // Handle coverage reports gracefully
                         try {
                             if (fileExists('app/coverage/lcov-report/index.html')) {
-                                publishHTML(target: [
-                                    allowMissing: true,
-                                    alwaysLinkToLastBuild: false,
-                                    keepAll: true,
-                                    reportDir: 'app/coverage',
-                                    reportFiles: 'lcov-report/index.html',
-                                    reportName: 'Jest Coverage Report',
-                                    reportTitles: ''
-                                ])
+                                // Check if publishHTML plugin is available
+                                script {
+                                    try {
+                                        publishHTML(target: [
+                                            allowMissing: true,
+                                            alwaysLinkToLastBuild: false,
+                                            keepAll: true,
+                                            reportDir: 'app/coverage',
+                                            reportFiles: 'lcov-report/index.html',
+                                            reportName: 'Jest Coverage Report',
+                                            reportTitles: ''
+                                        ])
+                                        echo "✅ Coverage report published successfully"
+                                    } catch (Exception htmlError) {
+                                        echo "⚠️ publishHTML plugin not available: ${htmlError.getMessage()}"
+                                        echo "📁 Coverage report available at: app/coverage/lcov-report/index.html"
+                                        
+                                        // Alternative: Archive the coverage report as build artifacts
+                                        try {
+                                            archiveArtifacts artifacts: 'app/coverage/**/*', allowEmptyArchive: true, fingerprint: false
+                                            echo "✅ Coverage report archived as build artifact"
+                                        } catch (Exception archiveError) {
+                                            echo "⚠️ Could not archive coverage report: ${archiveError.getMessage()}"
+                                        }
+                                    }
+                                }
+                            } else {
+                                echo "⚠️ Coverage report not found at app/coverage/lcov-report/index.html"
                             }
                         } catch (Exception e) {
-                            echo "⚠️ Coverage report failed: ${e.getMessage()}"
+                            echo "⚠️ Coverage report processing failed: ${e.getMessage()}"
                         }
                     }
                 }

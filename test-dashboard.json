@@ -1,0 +1,31 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Test Dashboard",
+    "tags": ["test"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Simple UP Query",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "up",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "prometheus"
+            }
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+      }
+    ],
+    "time": {
+      "from": "now-5m",
+      "to": "now"
+    },
+    "refresh": "5s"
+  },
+  "overwrite": true
+}

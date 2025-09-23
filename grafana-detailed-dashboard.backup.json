@@ -1217,7 +1217,7 @@
           "type": "dashboard"
         },
         {
-          "datasource": {"type": "prometheus", "uid": "feytew4t4bmrkb"},
+          "datasource": "prometheus",
           "enable": true,
           "expr": "changes(jenkins_builds_last_build_result_ordinal[1h]) > 0",
           "iconColor": "red",
@@ -1240,7 +1240,7 @@
             "text": "All",
             "value": "$__all"
           },
-          "datasource": {"type": "prometheus", "uid": "feytew4t4bmrkb"},
+          "datasource": "prometheus",
           "definition": "label_values(up, instance)",
           "hide": 0,
           "includeAll": true,
@@ -1265,7 +1265,7 @@
             "text": "All",
             "value": "$__all"
           },
-          "datasource": {"type": "prometheus", "uid": "feytew4t4bmrkb"},
+          "datasource": "prometheus",
           "definition": "label_values(kube_pod_info, namespace)",
           "hide": 0,
           "includeAll": true,

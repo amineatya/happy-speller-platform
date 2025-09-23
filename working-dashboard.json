@@ -1,0 +1,76 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Working Dashboard Test",
+    "tags": ["test", "working"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Node Status (UP)",
+        "type": "stat", 
+        "targets": [
+          {
+            "expr": "up",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "feytew4t4bmrkb"
+            }
+          }
+        ],
+        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "Kubernetes Nodes",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "kube_node_info",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "feytew4t4bmrkb"
+            }
+          }
+        ],
+        "gridPos": {"h": 8, "w": 6, "x": 6, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "CPU Usage %",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "100 - (avg by (instance) (irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+            "datasource": {
+              "type": "prometheus", 
+              "uid": "feytew4t4bmrkb"
+            }
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+      },
+      {
+        "id": 4,
+        "title": "Memory Usage",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "feytew4t4bmrkb"
+            }
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+      }
+    ],
+    "time": {
+      "from": "now-5m",
+      "to": "now"
+    },
+    "refresh": "5s"
+  },
+  "overwrite": true
+}

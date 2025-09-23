@@ -45,15 +45,22 @@
   },
   "eslintConfig": {
     "env": {
+      "es2021": true,
       "node": true,
-      "jest": true
+      "jest": true,
+      "browser": true
     },
-    "extends": "eslint:recommended",
+    "extends": ["eslint:recommended"],
     "parserOptions": {
-      "ecmaVersion": 2018
+      "ecmaVersion": "latest",
+      "sourceType": "module"
     },
     "rules": {
-      "no-console": "warn"
+      "no-console": "warn",
+      "no-unused-vars": ["error", { 
+        "argsIgnorePattern": "^_", 
+        "varsIgnorePattern": "^_" 
+      }]
     }
   }
 }

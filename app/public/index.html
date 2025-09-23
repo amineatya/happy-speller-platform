@@ -696,8 +696,14 @@
             words.forEach(word => {
                 const card = document.createElement('div');
                 card.className = 'word-card';
+                // Add accessibility attributes
+                card.setAttribute('role', 'button');
+                card.setAttribute('tabindex', '0');
+                card.setAttribute('aria-label', `Practice word: ${word}`);
+                
                 if (state.completedWords.includes(word)) {
                     card.classList.add('starred');
+                    card.setAttribute('aria-label', `Practice word: ${word} (completed)`);
                 }
                 
                 const wordText = document.createElement('div');
@@ -706,6 +712,15 @@
                 card.appendChild(wordText);
                 
                 card.dataset.word = word;
+                
+                // Add keyboard event handler
+                card.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        startPractice(word);
+                    }
+                });
+                
                 elements.wordsContainer.appendChild(card);
             });
         }
