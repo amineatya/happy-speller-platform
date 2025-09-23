@@ -45,3 +45,11 @@
       capabilities:
         drop:
         - ALL
+      runAsUser: 33
+      runAsGroup: 33
+- op: replace
+  path: /spec/template/spec/securityContext
+  value:
+    fsGroup: 33
+    runAsNonRoot: true
+    runAsUser: 33
