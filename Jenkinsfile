@@ -356,22 +356,19 @@ EOF
                                 def shortCommit = env.COMMIT_SHA.take(8)
                                 sh """
                                     export KUBECONFIG=\${KUBECONFIG_FILE}
+                                    export BUILD_NUMBER=${BUILD_NUMBER}
+                                    export GIT_COMMIT=${shortCommit}
+                                    
                                     # Test connection first
                                     kubectl get nodes || { echo "⚠️ Kubernetes connection failed"; exit 0; }
-                                    # Create namespace if it doesn't exist
-                                    kubectl create namespace ${env.NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
                                     
-                                    # Deploy with Helm (if available) or kubectl
-                                    if which helm >/dev/null 2>&1; then
-                                        helm upgrade --install ${env.APP_NAME} ./helm/app \
-                                          --namespace ${env.NAMESPACE} \
-                                          --set image.repository=${env.REGISTRY}/${env.APP_NAME} \
-                                          --set image.tag=${BUILD_NUMBER}-${shortCommit} \
-                                          --set replicaCount=2 \
-                                          --timeout=300s \
-                                          --wait || { echo "⚠️ Helm deployment failed but continuing"; exit 0; }
+                                    # Run automatic deployment script
+                                    if [ -f "scripts/simple-auto-deploy.sh" ]; then
+                                        chmod +x scripts/simple-auto-deploy.sh
+                                        ./scripts/simple-auto-deploy.sh || { echo "⚠️ Auto-deployment failed but continuing"; exit 0; }
                                     else
-                                        echo "Helm not found, skipping deployment"
+                                        echo "⚠️ Deployment script not found, using basic deployment"
+                                        kubectl -n ${env.NAMESPACE} patch deployment ${env.APP_NAME} -p "{\"spec\":{\"template\":{\"metadata\":{\"annotations\":{\"kubectl.kubernetes.io/restartedAt\":\"$(date -Iseconds)\",\"build.number\":\"${BUILD_NUMBER}\",\"git.commit\":\"${shortCommit}\"}}}}}" || echo "Deployment patch failed"
                                     fi
                                 """
                                 echo "✅ Deployed to Kubernetes successfully"

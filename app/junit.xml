@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="31" failures="0" errors="0" time="0.466">
+  <testsuite name="Happy Speller Integration Tests" errors="0" failures="0" skipped="0" timestamp="2025-09-23T03:06:30" time="0.382" tests="14">
+    <testcase classname="Happy Speller Integration Tests Application Flow should serve the complete application workflow" name="Happy Speller Integration Tests Application Flow should serve the complete application workflow" time="0.02">
+    </testcase>
+    <testcase classname="Happy Speller Integration Tests Application Flow should handle SPA routing correctly" name="Happy Speller Integration Tests Application Flow should handle SPA routing correctly" time="0.006">
+    </testcase>
+    <testcase classname="Happy Speller Integration Tests Content Validation should serve application with all required word sets" name="Happy Speller Integration Tests Content Validation should serve application with all required word sets" time="0.002">
+    </testcase>
+    <testcase classname="Happy Speller Integration Tests Content Validation should serve application with math activities" name="Happy Speller Integration Tests Content Validation should serve application with math activities" time="0.002">
+    </testcase>
+    <testcase classname="Happy Speller Integration Tests Content Validation should include JavaScript application state" name="Happy Speller Integration Tests Content Validation should include JavaScript application state" time="0.001">
+    </testcase>
+    <testcase classname="Happy Speller Integration Tests Content Validation should include proper CSS styling" name="Happy Speller Integration Tests Content Validation should include proper CSS styling" time="0.001">
+    </testcase>
+    <testcase classname="Happy Speller Integration Tests Accessibility Features should include accessibility attributes" name="Happy Speller Integration Tests Accessibility Features should include accessibility attributes" time="0.001">
+    </testcase>
+    <testcase classname="Happy Speller Integration Tests Accessibility Features should support keyboard navigation" name="Happy Speller Integration Tests Accessibility Features should support keyboard navigation" time="0.002">
+    </testcase>
+    <testcase classname="Happy Speller Integration Tests Responsive Design should include responsive CSS media queries" name="Happy Speller Integration Tests Responsive Design should include responsive CSS media queries" time="0.001">
+    </testcase>
+    <testcase classname="Happy Speller Integration Tests Responsive Design should include viewport meta tag" name="Happy Speller Integration Tests Responsive Design should include viewport meta tag" time="0.001">
+    </testcase>
+    <testcase classname="Happy Speller Integration Tests Performance Considerations should serve application quickly" name="Happy Speller Integration Tests Performance Considerations should serve application quickly" time="0.001">
+    </testcase>
+    <testcase classname="Happy Speller Integration Tests Performance Considerations should handle multiple concurrent requests" name="Happy Speller Integration Tests Performance Considerations should handle multiple concurrent requests" time="0.003">
+    </testcase>
+    <testcase classname="Happy Speller Integration Tests Error Resilience should handle malformed requests gracefully" name="Happy Speller Integration Tests Error Resilience should handle malformed requests gracefully" time="0.009">
+    </testcase>
+    <testcase classname="Happy Speller Integration Tests Error Resilience should handle large payloads appropriately" name="Happy Speller Integration Tests Error Resilience should handle large payloads appropriately" time="0.034">
+    </testcase>
+  </testsuite>
+  <testsuite name="Happy Speller Server" errors="0" failures="0" skipped="0" timestamp="2025-09-23T03:06:31" time="0.057" tests="17">
+    <testcase classname="Happy Speller Server GET /healthz should return status 200 and JSON with status ok" name="Happy Speller Server GET /healthz should return status 200 and JSON with status ok" time="0.002">
+    </testcase>
+    <testcase classname="Happy Speller Server GET /healthz should return valid timestamp format" name="Happy Speller Server GET /healthz should return valid timestamp format" time="0.001">
+    </testcase>
+    <testcase classname="Happy Speller Server GET /api/version should return application version and name" name="Happy Speller Server GET /api/version should return application version and name" time="0.001">
+    </testcase>
+    <testcase classname="Happy Speller Server GET /api/version should return version from environment or default" name="Happy Speller Server GET /api/version should return version from environment or default" time="0.001">
+    </testcase>
+    <testcase classname="Happy Speller Server GET / should serve the main application HTML" name="Happy Speller Server GET / should serve the main application HTML" time="0.001">
+    </testcase>
+    <testcase classname="Happy Speller Server GET / should serve HTML with proper meta tags" name="Happy Speller Server GET / should serve HTML with proper meta tags" time="0">
+    </testcase>
+    <testcase classname="Happy Speller Server GET / should include CSS and JavaScript" name="Happy Speller Server GET / should include CSS and JavaScript" time="0">
+    </testcase>
+    <testcase classname="Happy Speller Server Static file serving should serve static files with correct content type" name="Happy Speller Server Static file serving should serve static files with correct content type" time="0.001">
+    </testcase>
+    <testcase classname="Happy Speller Server Static file serving should handle unknown static files gracefully" name="Happy Speller Server Static file serving should handle unknown static files gracefully" time="0.001">
+    </testcase>
+    <testcase classname="Happy Speller Server Security headers should have basic security headers" name="Happy Speller Server Security headers should have basic security headers" time="0">
+    </testcase>
+    <testcase classname="Happy Speller Server Security headers should have helmet security middleware active" name="Happy Speller Server Security headers should have helmet security middleware active" time="0.001">
+    </testcase>
+    <testcase classname="Happy Speller Server CORS should handle CORS requests" name="Happy Speller Server CORS should handle CORS requests" time="0.001">
+    </testcase>
+    <testcase classname="Happy Speller Server CORS should handle CORS preflight requests" name="Happy Speller Server CORS should handle CORS preflight requests" time="0.001">
+    </testcase>
+    <testcase classname="Happy Speller Server Error handling should handle 404 for API routes" name="Happy Speller Server Error handling should handle 404 for API routes" time="0.001">
+    </testcase>
+    <testcase classname="Happy Speller Server Error handling should handle invalid JSON gracefully" name="Happy Speller Server Error handling should handle invalid JSON gracefully" time="0.004">
+    </testcase>
+    <testcase classname="Happy Speller Server Performance should respond to health check quickly" name="Happy Speller Server Performance should respond to health check quickly" time="0.001">
+    </testcase>
+    <testcase classname="Happy Speller Server Performance should handle concurrent requests" name="Happy Speller Server Performance should handle concurrent requests" time="0.004">
+    </testcase>
+  </testsuite>
+</testsuites>

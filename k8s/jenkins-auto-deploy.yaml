@@ -1,0 +1,95 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: happy-speller-config
+  namespace: demo
+data:
+  NODE_ENV: "production"
+  PORT: "8080"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: happy-speller
+  namespace: demo
+  labels:
+    app: happy-speller
+    version: "jenkins-managed"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: happy-speller
+  template:
+    metadata:
+      labels:
+        app: happy-speller
+    spec:
+      containers:
+      - name: happy-speller
+        image: node:20-alpine  # This will be replaced by Jenkins
+        command: ["sh", "-c"]
+        args:
+        - |
+          # Placeholder for Jenkins-managed deployment
+          # Jenkins will update this with proper Docker image
+          mkdir -p /app && cd /app
+          cat > package.json << 'EOF'
+          {
+            "name": "happy-speller",
+            "version": "1.0.0",
+            "main": "server.js",
+            "dependencies": {
+              "express": "^4.18.2",
+              "cors": "^2.8.5",
+              "helmet": "^7.0.0"
+            }
+          }
+          EOF
+          cat > server.js << 'EOF'
+          const express = require('express');
+          const app = express();
+          const port = process.env.PORT || 8080;
+          
+          app.use(express.json());
+          
+          app.get('/healthz', (req, res) => {
+            res.json({ status: 'ok', version: 'JENKINS_BUILD_NUMBER', timestamp: new Date().toISOString() });
+          });
+          
+          app.get('/', (req, res) => {
+            res.send(`<h1>🚀 Happy Speller Platform</h1>
+            <p>Build: JENKINS_BUILD_NUMBER</p>
+            <p>Auto-deployed from Git push!</p>
+            <p><a href="/healthz">Health Check</a></p>`);
+          });
+          
+          app.listen(port, '0.0.0.0', () => {
+            console.log(`Happy Speller Platform running on port ${port}`);
+          });
+          EOF
+          npm install && exec node server.js
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: happy-speller-config
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 300m
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 5

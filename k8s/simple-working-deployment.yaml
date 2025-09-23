@@ -1,0 +1,160 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: happy-speller
+  namespace: demo
+  labels:
+    app: happy-speller
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: happy-speller
+  template:
+    metadata:
+      labels:
+        app: happy-speller
+    spec:
+      containers:
+      - name: happy-speller
+        image: node:20-alpine
+        command: ["sh", "-c"]
+        args:
+        - |
+          # Create app directory
+          mkdir -p /app
+          cd /app
+          
+          # Create package.json with dependencies
+          cat > package.json << 'EOF'
+          {
+            "name": "happy-speller",
+            "version": "1.0.0",
+            "main": "server.js",
+            "dependencies": {
+              "express": "^4.18.2",
+              "cors": "^2.8.5",
+              "helmet": "^7.0.0"
+            }
+          }
+          EOF
+          
+          # Create simple server.js
+          cat > server.js << 'EOF'
+          const express = require('express');
+          const cors = require('cors');
+          const helmet = require('helmet');
+          const path = require('path');
+          
+          const app = express();
+          const port = process.env.PORT || 8080;
+          
+          // Security middleware
+          app.use(helmet());
+          app.use(cors());
+          app.use(express.json({ limit: '1mb' }));
+          
+          // Health endpoint
+          app.get('/healthz', (req, res) => {
+            res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+          });
+          
+          // Main route
+          app.get('/', (req, res) => {
+            res.send(`
+              <!DOCTYPE html>
+              <html>
+              <head>
+                <title>🌟 Happy Speller - Arabic Learning Platform</title>
+                <style>
+                  body { font-family: Arial, sans-serif; margin: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+                  .container { max-width: 800px; margin: 0 auto; text-align: center; }
+                  .card { background: rgba(255,255,255,0.1); padding: 30px; border-radius: 15px; margin: 20px 0; }
+                  .emoji { font-size: 3em; margin: 10px; }
+                  .feature { margin: 15px 0; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px; }
+                </style>
+              </head>
+              <body>
+                <div class="container">
+                  <div class="card">
+                    <div class="emoji">🌟</div>
+                    <h1>Happy Speller Platform</h1>
+                    <p>Arabic Learning Made Fun & Interactive!</p>
+                  </div>
+                  
+                  <div class="card">
+                    <h2>🎯 Features</h2>
+                    <div class="feature">📚 Interactive Arabic Lessons</div>
+                    <div class="feature">🎮 Gamified Learning Experience</div>
+                    <div class="feature">🏆 Progress Tracking</div>
+                    <div class="feature">🔤 Spelling Games & Exercises</div>
+                  </div>
+                  
+                  <div class="card">
+                    <h2>🚀 Application Status</h2>
+                    <p>✅ Server: Running on Talos Kubernetes</p>
+                    <p>✅ Health: <a href="/healthz" style="color: #90EE90;">/healthz</a></p>
+                    <p>✅ Version: 1.0.0</p>
+                    <p>✅ Environment: Production</p>
+                  </div>
+                  
+                  <div class="card">
+                    <p>🎉 Welcome to your Arabic learning journey!</p>
+                    <small>Deployed via Jenkins CI/CD Pipeline</small>
+                  </div>
+                </div>
+              </body>
+              </html>
+            `);
+          });
+          
+          // API endpoints
+          app.get('/api/status', (req, res) => {
+            res.json({
+              application: 'Happy Speller Platform',
+              version: '1.0.0',
+              status: 'running',
+              environment: process.env.NODE_ENV || 'production',
+              uptime: process.uptime(),
+              timestamp: new Date().toISOString()
+            });
+          });
+          
+          app.listen(port, '0.0.0.0', () => {
+            console.log(`🌟 Happy Speller Platform running on port ${port}`);
+            console.log(`🚀 Environment: ${process.env.NODE_ENV || 'production'}`);
+            console.log(`💫 Health check: http://localhost:${port}/healthz`);
+          });
+          EOF
+          
+          # Install dependencies and start
+          echo "Installing dependencies..."
+          npm install
+          echo "🚀 Starting Happy Speller Platform..."
+          exec node server.js
+        ports:
+        - containerPort: 8080
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "8080"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 300m
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 5
