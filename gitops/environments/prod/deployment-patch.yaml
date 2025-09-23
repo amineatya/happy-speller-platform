@@ -47,12 +47,24 @@
         - ALL
       runAsUser: 101
       runAsGroup: 101
+    volumeMounts:
+    - name: nginx-cache
+      mountPath: /var/cache/nginx
+    - name: nginx-run
+      mountPath: /var/run
 - op: replace
   path: /spec/template/spec/securityContext
   value:
     fsGroup: 101
     runAsNonRoot: true
     runAsUser: 101
+- op: add
+  path: /spec/template/spec/volumes
+  value:
+  - name: nginx-cache
+    emptyDir: {}
+  - name: nginx-run
+    emptyDir: {}
 - op: replace
   path: /spec/strategy
   value:
