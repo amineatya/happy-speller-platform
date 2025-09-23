@@ -1,41 +1,47 @@
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: happy-speller
-spec:
-  template:
-    spec:
-      containers:
-      - name: happy-speller
-        resources:
-          requests:
-            memory: "64Mi"
-            cpu: "50m"
-          limits:
-            memory: "128Mi"
-            cpu: "100m"
-        env:
-        - name: ENVIRONMENT
-          value: "dev"
-        - name: LOG_LEVEL
-          value: "debug"
-        - name: NODE_ENV
-          value: "development"
-        - name: PORT
-          value: "80"
-        ports:
-        - containerPort: 80
-          name: http
-          protocol: TCP
-        livenessProbe:
-          httpGet:
-            path: /
-            port: 80
-          initialDelaySeconds: 10
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /
-            port: 80
-          initialDelaySeconds: 5
-          periodSeconds: 5
+- op: replace
+  path: /spec/template/spec/containers/0
+  value:
+    name: happy-speller
+    image: httpd:alpine
+    imagePullPolicy: Always
+    ports:
+    - containerPort: 80
+      name: http
+      protocol: TCP
+    env:
+    - name: ENVIRONMENT
+      value: "dev"
+    - name: LOG_LEVEL
+      value: "debug"
+    - name: NODE_ENV
+      value: "development"
+    - name: PORT
+      value: "80"
+    livenessProbe:
+      httpGet:
+        path: /
+        port: 80
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+    readinessProbe:
+      httpGet:
+        path: /
+        port: 80
+      initialDelaySeconds: 5
+      periodSeconds: 5
+      timeoutSeconds: 3
+      failureThreshold: 3
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "50m"
+      limits:
+        memory: "128Mi"
+        cpu: "100m"
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
