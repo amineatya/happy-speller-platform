@@ -21,15 +21,20 @@ spec:
           value: "debug"
         - name: NODE_ENV
           value: "development"
+        - name: PORT
+          value: "80"
+        ports:
+        - containerPort: 80
+          name: http
         livenessProbe:
           httpGet:
-            path: /healthz
-            port: 8080
+            path: /
+            port: 80
           initialDelaySeconds: 10
           periodSeconds: 10
         readinessProbe:
           httpGet:
-            path: /healthz
-            port: 8080
+            path: /
+            port: 80
           initialDelaySeconds: 5
           periodSeconds: 5
