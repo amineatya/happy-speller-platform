@@ -15,7 +15,7 @@ commonLabels:
   app.kubernetes.io/version: latest
 
 images:
-  - name: nginx
+  - name: httpd
     newTag: alpine
 
 patchesStrategicMerge:
