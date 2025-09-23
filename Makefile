@@ -99,54 +99,109 @@ push-image: build-image ## Push Docker image to registry
 	docker push $(LATEST_TAG)
 	@echo -e "$(GREEN)[SUCCESS]$(NC) Docker image pushed to registry"
 
+# Secure Credential Management targets
+.PHONY: init-credentials
+init-credentials: ## Initialize secure credential management system
+	@echo -e "$(BLUE)[INFO]$(NC) Initializing secure credential management..."
+	@if [ ! -f .env ]; then \
+		echo -e "$(YELLOW)[WARNING]$(NC) .env file not found. Creating from template..."; \
+		cp .env.example .env; \
+		echo -e "$(YELLOW)[WARNING]$(NC) Please edit .env with your actual credentials"; \
+	fi
+	@chmod 600 .env
+	@source scripts/secure-credentials.sh && init_secure_credentials
+	@echo -e "$(GREEN)[SUCCESS]$(NC) Secure credential management initialized"
+
+.PHONY: validate-credentials
+validate-credentials: ## Validate all required credentials
+	@echo -e "$(BLUE)[INFO]$(NC) Validating credentials..."
+	@source scripts/secure-credentials.sh && validate_required_credentials
+	@echo -e "$(GREEN)[SUCCESS]$(NC) All credentials validated"
+
+.PHONY: check-security
+check-security: ## Run security checks on credential management
+	@echo -e "$(BLUE)[INFO]$(NC) Running security checks..."
+	@source scripts/secure-credentials.sh && check_secure_environment
+	@echo -e "$(GREEN)[SUCCESS]$(NC) Security checks completed"
+
+.PHONY: backup-credentials
+backup-credentials: ## Create encrypted backup of credentials
+	@echo -e "$(BLUE)[INFO]$(NC) Creating encrypted credential backup..."
+	@source scripts/secure-credentials.sh && backup_credentials
+	@echo -e "$(GREEN)[SUCCESS]$(NC) Credential backup completed"
+
+.PHONY: setup-jenkins-creds
+setup-jenkins-creds: validate-credentials ## Setup Jenkins credentials using secure system
+	@echo -e "$(BLUE)[INFO]$(NC) Setting up Jenkins credentials securely..."
+	@echo -e "$(BLUE)[INFO]$(NC) Copy the following script content and run it in Jenkins Script Console:"
+	@echo -e "$(YELLOW)=== Jenkins Script Console Content ===$(NC)"
+	@cat secure-jenkins-credentials.groovy
+	@echo -e "$(YELLOW)=== End of Script Content ===$(NC)"
+	@echo -e "$(BLUE)[INFO]$(NC) Instructions:"
+	@echo -e "  1. Go to Jenkins -> Manage Jenkins -> Script Console"
+	@echo -e "  2. Copy and paste the script content above"
+	@echo -e "  3. Click 'Run' to setup credentials securely"
+
+.PHONY: rotate-credentials
+rotate-credentials: ## Rotate all credentials that need rotation
+	@echo -e "$(BLUE)[INFO]$(NC) Checking and rotating credentials..."
+	./scripts/rotate-credentials.sh --all
+	@echo -e "$(GREEN)[SUCCESS]$(NC) Credential rotation check completed"
+
+.PHONY: rotate-credentials-force
+rotate-credentials-force: ## Force rotation of all credentials
+	@echo -e "$(YELLOW)[WARNING]$(NC) Force rotating ALL credentials!"
+	@read -p "Are you sure? This will rotate all credentials regardless of age [y/N] " -n 1 -r; echo; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		./scripts/rotate-credentials.sh --force-all; \
+	else \
+		echo -e "$(BLUE)[INFO]$(NC) Credential rotation cancelled"; \
+	fi
+
+.PHONY: credential-status
+credential-status: ## Show credential rotation status
+	@echo -e "$(BLUE)[INFO]$(NC) Checking credential rotation status..."
+	./scripts/rotate-credentials.sh --status
+
 # Infrastructure targets
 .PHONY: terraform-init
-terraform-init: ## Initialize Terraform
-	@echo -e "$(BLUE)[INFO]$(NC) Initializing Terraform..."
-	cd infra/terraform && terraform init
+terraform-init: ## Initialize Terraform using secure credential management
+	@echo -e "$(BLUE)[INFO]$(NC) Initializing Terraform securely..."
+	@echo -e "$(BLUE)[INFO]$(NC) Using secure Terraform wrapper for credential management"
+	./scripts/secure-terraform.sh init
 	@echo -e "$(GREEN)[SUCCESS]$(NC) Terraform initialized"
 
 .PHONY: terraform-plan
-terraform-plan: terraform-init ## Plan Terraform changes
-	@echo -e "$(BLUE)[INFO]$(NC) Planning Terraform changes..."
-	@if [ ! -f infra/terraform/terraform.tfvars ]; then \
-		echo -e "$(YELLOW)[WARNING]$(NC) terraform.tfvars not found, using defaults"; \
-	fi
-	cd infra/terraform && terraform plan
+terraform-plan: terraform-init ## Plan Terraform changes using secure credential management
+	@echo -e "$(BLUE)[INFO]$(NC) Planning Terraform changes securely..."
+	@echo -e "$(BLUE)[INFO]$(NC) Using secure Terraform wrapper for credential management"
+	./scripts/secure-terraform.sh plan
 	@echo -e "$(GREEN)[SUCCESS]$(NC) Terraform plan completed"
 
 .PHONY: terraform-apply
-terraform-apply: terraform-init ## Apply Terraform changes
-	@echo -e "$(BLUE)[INFO]$(NC) Applying Terraform changes..."
-	@if [ -z "$(MINIO_ACCESS_KEY)" ] || [ -z "$(MINIO_SECRET_KEY)" ]; then \
-		echo -e "$(RED)[ERROR]$(NC) MINIO_ACCESS_KEY and MINIO_SECRET_KEY must be set"; \
-		exit 1; \
-	fi
-	cd infra/terraform && terraform apply -auto-approve \
-		-var="minio_access_key=$(MINIO_ACCESS_KEY)" \
-		-var="minio_secret_key=$(MINIO_SECRET_KEY)" \
-		-var="grafana_admin_password=$(GRAFANA_ADMIN_PASSWORD)"
+terraform-apply: terraform-init ## Apply Terraform changes using secure credential management
+	@echo -e "$(BLUE)[INFO]$(NC) Applying Terraform changes securely..."
+	@echo -e "$(BLUE)[INFO]$(NC) Using secure Terraform wrapper for credential management"
+	./scripts/secure-terraform.sh apply -auto-approve
 	@echo -e "$(GREEN)[SUCCESS]$(NC) Terraform applied successfully"
 
 .PHONY: terraform-destroy
-terraform-destroy: ## Destroy Terraform resources
+terraform-destroy: ## Destroy Terraform resources using secure credential management
 	@echo -e "$(YELLOW)[WARNING]$(NC) This will destroy all Terraform-managed resources!"
 	@read -p "Are you sure? [y/N] " -n 1 -r; echo; \
 	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
-		echo -e "$(BLUE)[INFO]$(NC) Destroying Terraform resources..."; \
-		cd infra/terraform && terraform destroy -auto-approve; \
+		echo -e "$(BLUE)[INFO]$(NC) Destroying Terraform resources securely..."; \
+		./scripts/secure-terraform.sh destroy -auto-approve; \
 		echo -e "$(GREEN)[SUCCESS]$(NC) Terraform resources destroyed"; \
 	else \
 		echo -e "$(BLUE)[INFO]$(NC) Terraform destroy cancelled"; \
 	fi
 
 .PHONY: ansible-setup
-ansible-setup: ## Run Ansible playbook for Jenkins setup
+ansible-setup: ## Run Ansible playbook for Jenkins setup with secure credentials
 	@echo -e "$(BLUE)[INFO]$(NC) Running Ansible playbook for Jenkins setup..."
-	@if [ -z "$(JENKINS_TOKEN)" ] || [ -z "$(GITEA_TOKEN)" ]; then \
-		echo -e "$(RED)[ERROR]$(NC) JENKINS_TOKEN and GITEA_TOKEN must be set"; \
-		exit 1; \
-	fi
+	@echo -e "$(BLUE)[INFO]$(NC) Using secure credential validation"
+	@source scripts/secure-credentials.sh && validate_env_var "JENKINS_TOKEN" "Jenkins API Token" && validate_env_var "GITEA_TOKEN" "Gitea API Token"
 	cd infra/ansible && ansible-playbook jenkins-setup.yaml
 	@echo -e "$(GREEN)[SUCCESS]$(NC) Ansible setup completed"
 
@@ -197,8 +252,9 @@ seed-minio: ## Setup MinIO buckets and seed with sample data
 	@echo -e "$(GREEN)[SUCCESS]$(NC) MinIO setup completed"
 
 .PHONY: minio-status
-minio-status: ## Check MinIO status and list buckets
-	@echo -e "$(BLUE)[INFO]$(NC) Checking MinIO status..."
+minio-status: ## Check MinIO status and list buckets using secure credentials
+	@echo -e "$(BLUE)[INFO]$(NC) Checking MinIO status with secure credentials..."
+	@source scripts/secure-credentials.sh && validate_env_var "MINIO_ACCESS_KEY" "MinIO Access Key" && validate_env_var "MINIO_SECRET_KEY" "MinIO Secret Key"
 	@if command -v mc &> /dev/null; then \
 		mc alias set local-minio $(MINIO_BASE) $(MINIO_ACCESS_KEY) $(MINIO_SECRET_KEY) --api S3v4 2>/dev/null || true; \
 		echo -e "$(BLUE)[INFO]$(NC) MinIO buckets:"; \
@@ -413,3 +469,51 @@ quickstart: validate version bootstrap build deploy ## Quick start: validate, bo
 	@echo "  make shell        - Get shell access to pod"
 	@echo "  make test-integration - Run integration tests"
 	@echo ""
+
+# Prometheus monitoring targets
+.PHONY: prometheus-test
+prometheus-test: ## Test Prometheus queries and show system health
+	@echo -e "$(BLUE)[INFO]$(NC) Testing Prometheus queries..."
+	./scripts/test-prometheus-queries.sh
+
+.PHONY: prometheus-ui
+prometheus-ui: ## Open Prometheus UI (requires port-forward)
+	@echo -e "$(BLUE)[INFO]$(NC) Opening Prometheus UI..."
+	@echo -e "$(YELLOW)[NOTE]$(NC) Prometheus UI will be available at http://localhost:9090"
+	@echo -e "$(YELLOW)[NOTE]$(NC) External access: http://192.168.50.183:30090"
+	@echo -e "$(YELLOW)[NOTE]$(NC) Press Ctrl+C to stop port-forward"
+	kubectl port-forward svc/prometheus -n monitoring 9090:9090
+
+.PHONY: monitoring-status
+monitoring-status: ## Check monitoring stack status
+	@echo -e "$(BLUE)[INFO]$(NC) Checking monitoring stack status..."
+	kubectl get pods -n monitoring
+	@echo ""
+	@echo -e "$(BLUE)Services:"
+	kubectl get svc -n monitoring
+	@echo ""
+	@echo -e "$(BLUE)Quick Metrics:"
+	@echo "Services Up: $$($(shell kubectl exec -n monitoring -c prometheus prometheus-694df77dd6-ffrkg -- wget -q -O- 'http://localhost:9090/api/v1/query?query=count%28up%20%3D%3D%201%29' | jq -r '.data.result[0].value[1]' 2>/dev/null || echo 'N/A'))"
+	@echo "Running Pods: $$($(shell kubectl exec -n monitoring -c prometheus prometheus-694df77dd6-ffrkg -- wget -q -O- 'http://localhost:9090/api/v1/query?query=count%28kube_pod_status_phase%7Bphase%3D%22Running%22%7D%29' | jq -r '.data.result[0].value[1]' 2>/dev/null || echo 'N/A'))"
+
+# Prometheus monitoring targets
+.PHONY: prometheus-test
+prometheus-test: ## Test Prometheus queries and show system health
+	@echo -e "$(BLUE)[INFO]$(NC) Testing Prometheus queries..."
+	./scripts/test-prometheus-queries.sh
+
+.PHONY: prometheus-ui
+prometheus-ui: ## Open Prometheus UI (requires port-forward)  
+	@echo -e "$(BLUE)[INFO]$(NC) Opening Prometheus UI..."
+	@echo -e "$(YELLOW)[NOTE]$(NC) Prometheus UI will be available at http://localhost:9090"
+	@echo -e "$(YELLOW)[NOTE]$(NC) External access: http://192.168.50.183:30090"
+	@echo -e "$(YELLOW)[NOTE]$(NC) Press Ctrl+C to stop port-forward"
+	kubectl port-forward svc/prometheus -n monitoring 9090:9090
+
+.PHONY: monitoring-status
+monitoring-status: ## Check monitoring stack status
+	@echo -e "$(BLUE)[INFO]$(NC) Checking monitoring stack status..."
+	kubectl get pods -n monitoring
+	@echo ""
+	@echo -e "$(BLUE)Services:$(NC)"
+	kubectl get svc -n monitoring
