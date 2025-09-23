@@ -1,18 +1,20 @@
-apiVersion: v1
-kind: Service
-metadata:
-  name: happy-speller
-  annotations:
-    service.beta.kubernetes.io/do-loadbalancer-enable-proxy-protocol: "true"
-    service.beta.kubernetes.io/do-loadbalancer-algorithm: "round_robin"
-spec:
-  type: LoadBalancer
-  ports:
+- op: replace
+  path: /spec/ports
+  value:
   - port: 80
-    targetPort: 8080
+    targetPort: http
     protocol: TCP
     name: http
   - port: 443
-    targetPort: 8080
+    targetPort: http
     protocol: TCP
     name: https
+- op: add
+  path: /metadata/annotations/service.beta.kubernetes.io~1do-loadbalancer-enable-proxy-protocol
+  value: "true"
+- op: add
+  path: /metadata/annotations/service.beta.kubernetes.io~1do-loadbalancer-algorithm
+  value: "round_robin"
+- op: replace
+  path: /spec/type
+  value: LoadBalancer

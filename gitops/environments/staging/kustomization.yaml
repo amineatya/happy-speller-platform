@@ -15,12 +15,21 @@ commonLabels:
   app.kubernetes.io/version: stable
 
 images:
-  - name: registry.local:5000/happy-speller
-    newTag: stable
+  - name: httpd
+    newTag: alpine
 
-patchesStrategicMerge:
-  - deployment-patch.yaml
-  - service-patch.yaml
+patchesJson6902:
+  - path: deployment-patch.yaml
+    target:
+      version: v1
+      group: apps
+      kind: Deployment
+      name: happy-speller
+  - path: service-patch.yaml
+    target:
+      version: v1
+      kind: Service
+      name: happy-speller
 
 configMapGenerator:
   - name: happy-speller-config
