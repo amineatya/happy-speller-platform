@@ -368,7 +368,7 @@ EOF
                                         ./scripts/simple-auto-deploy.sh || { echo "⚠️ Auto-deployment failed but continuing"; exit 0; }
                                     else
                                         echo "⚠️ Deployment script not found, using basic deployment"
-                                        kubectl -n ${env.NAMESPACE} patch deployment ${env.APP_NAME} -p "{\"spec\":{\"template\":{\"metadata\":{\"annotations\":{\"kubectl.kubernetes.io/restartedAt\":\"$(date -Iseconds)\",\"build.number\":\"${BUILD_NUMBER}\",\"git.commit\":\"${shortCommit}\"}}}}}" || echo "Deployment patch failed"
+                                        kubectl -n ${env.NAMESPACE} patch deployment ${env.APP_NAME} -p "{\"spec\":{\"template\":{\"metadata\":{\"annotations\":{\"kubectl.kubernetes.io/restartedAt\":\"`date -Iseconds`\",\"build.number\":\"${BUILD_NUMBER}\",\"git.commit\":\"${shortCommit}\"}}}}}}" || echo "Deployment patch failed"
                                     fi
                                 """
                                 echo "✅ Deployed to Kubernetes successfully"
