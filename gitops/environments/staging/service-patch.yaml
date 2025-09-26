@@ -10,4 +10,4 @@
   value: "true"
 - op: replace
   path: /spec/type
-  value: LoadBalancer
+  value: NodePort

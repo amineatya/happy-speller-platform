@@ -17,4 +17,4 @@
   value: "round_robin"
 - op: replace
   path: /spec/type
-  value: LoadBalancer
+  value: NodePort
