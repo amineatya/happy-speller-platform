@@ -10,17 +10,32 @@ terraform {
       version = ">= 2.0"
     }
   }
+  
+  # MinIO S3-compatible backend configuration
+  backend "s3" {
+    # These values should be set via backend config file or environment variables
+    # bucket = "terraform-state"
+    # key    = "happy-speller/terraform.tfstate"
+    # region = "us-east-1"  # Required but ignored by MinIO
+    # endpoint = "http://localhost:9000"
+    # access_key = "your-access-key"
+    # secret_key = "your-secret-key"
+    # force_path_style = true
+    # skip_credentials_validation = true
+    # skip_metadata_api_check = true
+    # skip_region_validation = true
+  }
 }
 
 provider "kubernetes" {
   config_path = "~/.kube/config"
 }
 
-provider "helm" {
-  kubernetes {
-    config_path = "~/.kube/config"
-  }
-}
+# provider "helm" {
+#   kubernetes {
+#     config_path = "~/.kube/config"
+#   }
+# }
 
 # Create demo namespace
 resource "kubernetes_namespace" "demo" {
@@ -47,64 +62,64 @@ resource "kubernetes_secret" "minio_secrets" {
 }
 
 # Optional: Deploy MinIO if not available
-resource "helm_release" "minio" {
-  count      = var.deploy_minio ? 1 : 0
-  name       = "minio"
-  repository = "https://charts.bitnami.com/bitnami"
-  chart      = "minio"
-  version    = "12.6.0"
-  namespace  = kubernetes_namespace.demo.metadata[0].name
-
-  set {
-    name  = "auth.rootUser"
-    value = var.minio_access_key
-  }
-
-  set {
-    name  = "auth.rootPassword"
-    value = var.minio_secret_key
-  }
-
-  set {
-    name  = "defaultBuckets"
-    value = "artifacts,logs,docs"
-  }
-
-  set {
-    name  = "service.type"
-    value = "NodePort"
-  }
-}
+# resource "helm_release" "minio" {
+#   count      = var.deploy_minio ? 1 : 0
+#   name       = "minio"
+#   repository = "https://charts.bitnami.com/bitnami"
+#   chart      = "minio"
+#   version    = "12.6.0"
+#   namespace  = kubernetes_namespace.demo.metadata[0].name
+#
+#   set {
+#     name  = "auth.rootUser"
+#     value = var.minio_access_key
+#   }
+#
+#   set {
+#     name  = "auth.rootPassword"
+#     value = var.minio_secret_key
+#   }
+#
+#   set {
+#     name  = "defaultBuckets"
+#     value = "artifacts,logs,docs"
+#   }
+#
+#   set {
+#     name  = "service.type"
+#     value = "NodePort"
+#   }
+# }
 
 # Optional: Deploy Grafana if not available
-resource "helm_release" "grafana" {
-  count      = var.deploy_grafana ? 1 : 0
-  name       = "grafana"
-  repository = "https://grafana.github.io/helm-charts"
-  chart      = "grafana"
-  version    = "6.57.3"
-  namespace  = kubernetes_namespace.demo.metadata[0].name
-
-  set {
-    name  = "admin.user"
-    value = var.grafana_admin_user
-  }
-
-  set {
-    name  = "admin.password"
-    value = var.grafana_admin_password
-  }
-
-  set {
-    name  = "service.type"
-    value = "NodePort"
-  }
-
-  set {
-    name  = "persistence.enabled"
-    value = "true"
-  }
-}
+# resource "helm_release" "grafana" {
+#   count      = var.deploy_grafana ? 1 : 0
+#   name       = "grafana"
+#   repository = "https://grafana.github.io/helm-charts"
+#   chart      = "grafana"
+#   version    = "6.57.3"
+#   namespace  = kubernetes_namespace.demo.metadata[0].name
+#
+#   set {
+#     name  = "admin.user"
+#     value = var.grafana_admin_user
+#   }
+#
+#   set {
+#     name  = "admin.password"
+#     value = var.grafana_admin_password
+#   }
+#
+#   set {
+#     name  = "service.type"
+#     value = "NodePort"
+#   }
+#
+#   set {
+#     name  = "persistence.enabled"
+#     value = "true"
+#   }
+# }
 
 # Create network policies for security
 resource "kubernetes_network_policy" "happy_speller_network_policy" {

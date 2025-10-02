@@ -10,6 +10,25 @@ variable "minio_secret_key" {
   sensitive   = true
 }
 
+# Backend configuration variables (not used directly in resources, but documented for reference)
+variable "minio_endpoint" {
+  description = "MinIO endpoint URL for backend configuration"
+  type        = string
+  default     = "http://192.168.50.177:9000"
+}
+
+variable "terraform_state_bucket" {
+  description = "S3 bucket name for storing Terraform state"
+  type        = string
+  default     = "terraform-state"
+}
+
+variable "terraform_state_key" {
+  description = "S3 object key for Terraform state file"
+  type        = string
+  default     = "happy-speller/terraform.tfstate"
+}
+
 variable "deploy_minio" {
   description = "Whether to deploy MinIO"
   type        = bool

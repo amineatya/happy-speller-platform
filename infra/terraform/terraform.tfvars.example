@@ -11,6 +11,10 @@
 # source scripts/secure-credentials.sh
 # init_secure_credentials
 #
+# For backend configuration, use backend.conf or environment variables:
+# - Update backend.conf with your MinIO endpoint and credentials
+# - Or set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables
+#
 # Only create terraform.tfvars if you need non-sensitive overrides:
 
 # Infrastructure deployment flags
@@ -19,6 +23,12 @@ deploy_grafana = false
 
 # Non-sensitive configuration
 grafana_admin_user = "admin"
+
+# Backend Configuration (for reference - actual backend config is in backend.conf)
+# These variables are documented here but backend configuration should use backend.conf
+minio_endpoint         = "http://192.168.50.177:9000"
+terraform_state_bucket = "terraform-state"
+terraform_state_key    = "happy-speller/terraform.tfstate"
 
 # =============================================================================
 # SENSITIVE VALUES - DO NOT SET HERE!

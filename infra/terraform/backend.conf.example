@@ -1,0 +1,14 @@
+# Terraform Backend Configuration Template
+# Copy this file to backend.conf and fill in your actual values
+# DO NOT commit backend.conf to version control!
+
+bucket                      = "terraform-state"
+key                         = "happy-speller/terraform.tfstate"
+region                      = "us-east-1"
+endpoint                    = "http://YOUR_MINIO_ENDPOINT:9000"
+access_key                  = "YOUR_MINIO_ACCESS_KEY"
+secret_key                  = "YOUR_MINIO_SECRET_KEY"
+force_path_style           = true
+skip_credentials_validation = true
+skip_metadata_api_check     = true
+skip_region_validation      = true

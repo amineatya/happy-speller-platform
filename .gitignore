@@ -83,3 +83,12 @@ build/
 # Temporary files
 tmp/
 temp/
+
+# Security: Files with exposed credentials (DO NOT COMMIT)
+infra/terraform/backend.conf
+scripts/webhook-server.py
+upload-to-minio.sh
+
+# Terraform state and lock files
+infra/terraform/.terraform/
+infra/terraform/.terraform.lock.hcl
